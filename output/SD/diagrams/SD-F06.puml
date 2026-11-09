@@ -1,0 +1,53 @@
+@startuml
+title SD-F06 — Event settlement and equipment closure
+caption To-Be draft | PRD-15–17 / SA-F06 · Event / Settlement
+actor Customer as C
+actor Merchant as M
+boundary API
+database PostgreSQL as DB
+participant Worker
+C -> API : Provide proof against exact quote charge
+API -> DB : TX-05 attach proof and enter review
+M -> API : Verify deposit or balance independently
+API -> DB : TX-06 post receipt and record effective deadline or reschedule/refund case [DEC-021]
+opt Verified deposit or balance shortfall [DEC-028]
+ alt Existing cutoff still ahead
+  M -> API : Request exact outstanding amount
+  API -> DB : Queue notice using existing cutoff and mismatch case
+  C -> API : Register timely supplement evidence
+  M -> API : Verify new movement independently
+  API -> DB : Settle only exact eligible net total once
+ else Shortfall unresolved after cutoff
+  API -> DB : Keep actual receipts in manual reconciliation
+ end
+end
+Worker -> DB : TX-08 apply expiry or balance reminder only if eligible
+alt DEC-021 infeasible after verified deposit
+ M -> API : Record consented reschedule or reconcile refund
+ alt Settled balance or future new-date due plus 24 h grace
+  API -> DB : Swap unused window and revise deadline if unpaid [DEC-027]
+ else Outstanding due no longer feasible
+  API -> DB : Keep original commitments and open case for another date or refund
+ end
+else Overdue beyond effective cutoff
+ alt Timely balance proof still in review
+  API -> DB : Preserve slot and block nonpayment cancellation
+ else No funds found after review and bank check
+  M -> API : Attest no balance funds and record cancellation reason
+  API -> DB : Recheck current cutoff, proof and ledger, then release unused slot
+ else Paid or disputed funds
+  M -> API : Verify balance or reconcile without nonpayment cancellation
+ end
+else Booking proceeds
+ M -> API : Reopen recorded equipment-out and prior check
+ M -> API : Record setup, teardown and equipment checks
+ M -> API : Issue itemized extra charge if needed
+ API -> DB : TX-07 record check and independent obligation
+end
+opt Customer requests cancellation after payment
+ C -> API : Attempt cancellation
+ API -> DB : Recheck known payment facts under lock
+ API --> C : Decline without state or refund change
+end
+note over DB,Worker : Timely deposit proof keeps the window during merchant review [DEC-020]
+@enduml

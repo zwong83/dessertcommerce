@@ -1,0 +1,20 @@
+@startuml
+title SD-F07 — Durable notification delivery
+caption To-Be draft | PRD-18 / SA-F07 · Notification
+control "Owning use case" as Owner
+database PostgreSQL as DB
+participant Worker
+participant "Channel adapter" as Provider
+actor Merchant as M
+Owner -> DB : Commit transition and notice intent together
+Worker -> DB : Claim due work with fenced lease
+Worker -> Provider : Send minimal payload and stable key
+alt Delivered
+ Worker -> DB : Record attempt and success
+else Safe transient failure
+ Worker -> DB : Schedule up to three retries
+else Unknown or terminal
+ Worker -> DB : Record failure or ambiguous outcome
+ DB --> M : Work queue follow-up
+end
+@enduml

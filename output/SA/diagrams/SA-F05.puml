@@ -1,0 +1,18 @@
+@startuml
+title SA-F05 — Event enquiry and quote
+caption Event application, quote and manual allocation | PRD-13–14
+start
+:Customer submits dated event details;
+if (Required fields and lead time satisfied?) then (yes)
+ :Merchant assesses kitchen, staff, travel and equipment;
+ if (Resources and time feasible?) then (yes)
+  :Record resource window and issue versioned quote;
+  :Customer views terms and payment deadlines;
+ else (no)
+  :Offer another date or decline;
+ endif
+else (no)
+ :Show correction path;
+endif
+stop
+@enduml

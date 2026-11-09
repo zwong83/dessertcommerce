@@ -1,0 +1,18 @@
+@startuml
+title SD-UI08 — Merchant operations and reporting
+caption To-Be draft | F08 · Frontend · Merchant /merchant/work and /merchant/reports
+actor User
+boundary "Route and WorkQueue, AuditHistory and SalesReport" as UI
+participant "Shared API client" as Client
+participant "Authorized API" as API
+User -> UI : Open view or submit action
+UI -> Client : admin work, order or event details and reports
+Client -> API : Fetch or submit with applicable guards
+alt Success
+ API --> Client : Current typed result
+ Client --> UI : Render or refresh authoritative data
+else unauthorized or invalid date range
+ API --> Client : Typed failure
+ Client --> UI : Deny or request a bounded range
+end
+@enduml

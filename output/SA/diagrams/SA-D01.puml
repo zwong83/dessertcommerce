@@ -1,0 +1,39 @@
+@startuml
+title SA-D01 — Conceptual data and ownership
+caption Logical relationships across features | PRD F01–F08
+class CustomerAccount
+class Cart
+class CartSelection
+class ProductVariant
+class Product
+class ProductPhoto
+class MerchantRecovery
+class StandardOrder
+class DailyCapacity
+class CapacityHold
+class EventApplication
+class Quote
+class ResourceWindow
+class EquipmentCheck
+class Settlement
+class Notice
+class AuditFact
+CustomerAccount "1" -- "1" Cart
+Product "1" -- "*" ProductVariant
+Product "1" -- "*" ProductPhoto : ordered published gallery
+MerchantRecovery ..> AuditFact : restricted outcome
+Cart "1" *-- "*" CartSelection
+CartSelection "*" --> "1" ProductVariant
+CustomerAccount "1" -- "*" StandardOrder
+CustomerAccount "1" -- "*" EventApplication
+StandardOrder "1" -- "*" CapacityHold
+DailyCapacity "1" -- "*" CapacityHold
+EventApplication "1" *-- "*" Quote
+Quote "1" -- "0..1" ResourceWindow
+EventApplication "1" -- "*" EquipmentCheck
+StandardOrder "1" -- "*" Settlement
+EventApplication "1" -- "*" Settlement
+CustomerAccount "1" -- "*" Notice
+StandardOrder "1" -- "*" AuditFact
+EventApplication "1" -- "*" AuditFact
+@enduml

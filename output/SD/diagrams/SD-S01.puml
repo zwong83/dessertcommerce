@@ -1,0 +1,39 @@
+@startuml
+title SD-S01 — Standard order technical states
+caption To-Be · Order and Settlement · F03/F04 · TX-04–06
+[*] --> AwaitingFee : merchant delivery
+[*] --> AwaitingCash : Cash pickup
+[*] --> PendingProof : direct transfer, hold recorded
+AwaitingFee --> PendingProof : accept current fee + hold
+AwaitingFee --> AwaitingFee : revised serviceable fee/time offer
+AwaitingFee --> Rejected : no feasible offer or merchant declines
+AwaitingCash --> Accepted : merchant accepts + reserves
+AwaitingCash --> Rejected : merchant rejects
+AwaitingFee --> Cancelled : eligible customer cancellation
+AwaitingCash --> Cancelled : eligible customer cancellation
+PendingProof --> PaymentReview : timely proof registered
+PendingProof --> Expired : deadline reached without proof
+PendingProof --> Cancelled : no transfer confirmed, unpaid and unaccepted
+PendingProof --> PendingProof : sent or unsure, show WhatsApp follow-up
+PaymentReview --> PaymentReview : customer cancellation denied, WhatsApp follow-up
+PaymentReview --> Accepted : verified and feasible
+PaymentReview --> Exception : mismatch or cannot fulfil
+PaymentReview --> PaymentReview : reject evidence or issue 30-minute top-up notice
+PaymentReview --> PaymentReview : timely top-up proof keeps the hold through review
+PaymentReview --> Expired : top-up cutoff, no timely proof or remaining review
+PaymentReview --> Rejected : merchant rejects order and releases unused hold
+Accepted --> Preparing : allocation becomes used
+Preparing --> Ready : record ready timestamp
+Ready --> HandedOff : transfer order, record pickup or driver
+Ready --> Ready : record driver arrival separately
+Ready --> Exception : pre-handoff incident
+Ready --> Completed : Cash pickup and receipt, same transaction
+Ready --> NoShow : Cash pickup missed, no receipt
+HandedOff --> Completed
+HandedOff --> Exception : delivery incident
+Accepted --> Cancelled : merchant inability creates full-refund obligation
+Preparing --> Cancelled : merchant only, preserve used capacity
+Ready --> Cancelled : merchant only, preserve used capacity
+Exception --> Accepted : agreed reschedule, reallocate safely
+Exception --> Cancelled : recorded reconciliation
+@enduml

@@ -1,0 +1,26 @@
+@startuml
+title SD-UI00 — Customer and merchant route ownership
+caption To-Be draft | Frontend · F01–F08
+actor Customer
+actor Merchant
+package "Customer route group" {
+ [Login] as L
+ [Storefront and cart] as S
+ [Orders] as O
+ [Event requests] as E
+}
+package "Merchant route group" {
+ [Merchant sign-in] as ML
+ [Catalogue and capacity] as C
+ [Work, verification and reports] as W
+}
+Customer --> L
+L --> S
+S --> O
+S --> E
+Merchant --> ML
+ML --> C
+ML --> W
+O --> W : API-owned state only
+E --> W : API-owned state only
+@enduml

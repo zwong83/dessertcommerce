@@ -1,0 +1,19 @@
+@startuml
+title SA-03 — Target main flow
+caption Commercial v1 customer and merchant journey | PRD F01–F08
+start
+:Verify account and load workspace;
+if (Standard order?) then (yes)
+ :Choose fixed items, fulfilment and time;
+ :Revalidate quantity, cost and availability;
+ :Merchant accepts Cash or verifies DuitNow;
+ :Prepare and hand off or handle incident;
+else (event)
+ :Submit event details;
+ :Merchant assesses and quotes;
+ :Customer accepts and pays deposit and balance;
+ :Setup, teardown, inspect and settle extras;
+endif
+:Show owned status and derive records for reports;
+stop
+@enduml

@@ -1,0 +1,13 @@
+@startuml
+title SA-05 — Merchant use cases
+caption Dedicated administrator workspace | PRD US-05–06
+actor Merchant
+usecase "Manage products and availability" as U1
+usecase "Approve orders and quote events" as U2
+usecase "Reconcile payments and exceptions" as U3
+usecase "Fulfil, inspect and report" as U4
+Merchant --> U1
+Merchant --> U2
+Merchant --> U3
+Merchant --> U4
+@enduml

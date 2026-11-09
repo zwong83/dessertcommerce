@@ -1,0 +1,46 @@
+@startuml
+title SA-F04 — Standard settlement
+caption Cash and external transfer ownership | PRD-10–12
+actor Customer as C
+actor Merchant as M
+participant Order as O
+participant Settlement as S
+participant Capacity as A
+alt DuitNow
+ O -> A : Secure 30-minute hold
+ C -> S : Transfer outside system and submit proof
+ alt Timely proof
+  S -> A : Keep hold pending review
+  M -> S : Verify funds independently
+  S -> O : Confirm once or record exception
+  opt Merchant requests top-up for verified underpayment
+   M -> C : Send remaining amount and 30-minute proof deadline
+   alt Top-up proof submitted before cutoff
+    C -> S : Submit proof for the outstanding amount
+    S -> A : Keep capacity through review
+    M -> S : Verify total and confirm if eligible
+   else No timely top-up proof
+    S -> A : Release unused capacity at expiry
+    M -> S : Reconcile partial or late funds separately
+   end
+  end
+ else No timely proof
+  O -> A : Expire and release unused hold
+ end
+else Cash pickup
+ M -> O : Accept and secure capacity
+ M -> S : Record cash once at pickup or mark no-show
+end
+opt Customer considers cancellation
+ alt Unpaid and unaccepted
+  C -> O : Confirm no transfer and cancel
+  O -> A : Release unused hold if present
+ else Transfer sent or uncertain
+  O --> C : Contact merchant on WhatsApp
+  C -> M : Discuss payment and order manually
+ end
+end
+opt Verified discrepancy or merchant exception
+ M -> S : Reconcile and record authorized disposition
+end
+@enduml

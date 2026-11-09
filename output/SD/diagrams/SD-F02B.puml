@@ -1,0 +1,22 @@
+@startuml
+title SD-F02B — Preview and apply calendar impact
+caption FN-CAL-01–04 · To-Be · Frontend, Capacity and Order
+actor Merchant
+boundary "Capacity Calendar" as UI
+control Capacity
+database PostgreSQL as DB
+Merchant -> UI : Propose closure or cap change
+UI -> Capacity : POST impact preview
+Capacity -> DB : Read current day revision and affected orders
+Capacity --> UI : Counts, order links, canSave and bound token
+Merchant -> UI : Confirm reviewed edit
+UI -> Capacity : PUT same edit and token
+Capacity -> DB : Lock day, recheck version and totals
+note over Capacity,DB : Pending Cash and fee intake also advances impact revision
+alt Fresh and valid
+ DB -> DB : Update calendar and audit, preserve orders
+ Capacity --> UI : Saved policy; affected work stays actionable
+else Stale or below occupied/used
+ Capacity --> UI : Reject and refresh preview
+end
+@enduml

@@ -1,0 +1,21 @@
+@startuml
+title SD-UI06 — Event payment and inspection
+caption To-Be draft | F06 · Frontend · Customer /events/:id · merchant /merchant/events/:id
+actor User
+boundary "Route and InstalmentTimeline, EquipmentChecklist and ExtrasForm" as UI
+participant "Shared API client" as Client
+participant "Authorized API" as API
+User -> UI : Open view or submit action
+UI -> Client : event actions, proof and receipts
+Client -> API : Fetch or submit with applicable guards
+alt Success
+ API --> Client : Current typed result
+ Client --> UI : Render or refresh authoritative data
+ opt Timely balance proof awaiting review
+  UI --> User : Show slot reserved and disable overdue cancellation
+ end
+else grace, incorrect proof or invalid inspection
+ API --> Client : Typed failure
+ Client --> UI : Show the guarded next action and safe error
+end
+@enduml

@@ -1,0 +1,79 @@
+@startuml
+title SD-D01 — Physical ownership map
+caption To-Be draft | F01–F08 · Interface / Data · authoritative keys in schema.sql
+class account
+class otp_challenge
+class session
+class cart
+class cart_line
+class checkout_review
+class product
+class product_media
+class product_gallery
+class operating_policy
+class variant
+class standard_order
+class standard_order_line
+class delivery_fee_offer
+class order_recovery_agreement
+class capacity_day
+class capacity_product_limit
+class capacity_allocation
+class event_application
+class event_quote
+class event_schedule_change
+class resource_window
+class equipment_check
+class charge {
+  top_up_requested_at
+  top_up_due_at
+}
+class money_entry
+class payment_proof
+class settlement_case
+class refund_intent
+class full_refund_obligation
+class durable_work
+class notice_attempt
+class notice_followup
+class command_receipt
+class audit_event
+otp_challenge ..> account : verified identity
+account "1" -- "*" session
+account "1" -- "*" command_receipt
+account "1" -- "0..1" cart
+cart "1" -- "*" cart_line
+account "1" -- "*" checkout_review
+checkout_review "1" -- "0..1" standard_order
+product "1" -- "*" variant
+product "1" -- "*" product_media
+product "1" -- "*" product_gallery
+product_media "1" -- "0..1" product_gallery
+operating_policy ..> capacity_day : sets weekly defaults
+variant "1" -- "*" cart_line
+account "1" -- "*" standard_order
+standard_order "1" -- "*" standard_order_line
+standard_order "1" -- "*" delivery_fee_offer
+standard_order "1" -- "*" order_recovery_agreement
+standard_order "1" -- "*" capacity_allocation
+capacity_day "1" -- "*" capacity_allocation
+capacity_day "1" -- "*" capacity_product_limit
+account "1" -- "*" event_application
+event_application "1" -- "*" event_quote
+event_application "1" -- "*" event_schedule_change
+event_quote "1" -- "*" event_schedule_change
+event_quote "1" -- "0..1" resource_window
+event_application "1" -- "*" equipment_check
+standard_order "1" -- "*" charge : primary and consented adjustments
+event_application "1" -- "*" charge
+event_quote "1" -- "*" charge
+charge "1" -- "*" money_entry
+charge "1" -- "*" payment_proof
+charge "1" -- "*" settlement_case
+money_entry "1" -- "*" refund_intent
+money_entry "1" -- "0..1" full_refund_obligation
+durable_work "1" -- "*" notice_attempt
+durable_work "1" -- "0..1" notice_followup
+charge ..> durable_work : aggregate ref
+charge ..> audit_event : resource ref
+@enduml

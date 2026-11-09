@@ -1,0 +1,18 @@
+@startuml
+title SD-UI02 — Catalogue and calendar
+caption To-Be draft | F02 · Frontend · Customer /shop · merchant /merchant/catalog and /merchant/capacity
+actor User
+boundary "Route and ProductList, AvailabilityPicker and CapacityForm" as UI
+participant "Shared API client" as Client
+participant "Authorized API" as API
+User -> UI : Open view or submit action
+UI -> Client : catalog, availability, products, capacity
+Client -> API : Fetch or submit with applicable guards
+alt Success
+ API --> Client : Current typed result
+ Client --> UI : Render or refresh authoritative data
+else stale availability or conflict
+ API --> Client : Typed failure
+ Client --> UI : Refresh choices or preserve unsaved form
+end
+@enduml

@@ -1,0 +1,18 @@
+@startuml
+title SD-UI01 — Sign-in and account cart
+caption To-Be draft | F01 · Frontend · Customer /login, /cart · merchant /merchant/login
+actor User
+boundary "Route and OtpForm and CartLines" as UI
+participant "Shared API client" as Client
+participant "Authorized API" as API
+User -> UI : Open view or submit action
+UI -> Client : challenge, verify, session, cart
+Client -> API : Fetch or submit with applicable guards
+alt Success
+ API --> Client : Current typed result
+ Client --> UI : Render or refresh authoritative data
+else expired OTP, new-device sign-in or stale cart
+ API --> Client : Typed failure
+ Client --> UI : Show verification feedback or refetch canonical cart
+end
+@enduml

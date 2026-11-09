@@ -1,0 +1,40 @@
+@startuml
+title SD-S02 — Event and quote commitment
+caption To-Be · Event and Settlement · F05/F06 · DEC-020 · TX-05–08
+[*] --> Applied : submit eligible event
+Applied --> Quoted : issue current quote and record window
+Applied --> Declined : merchant records decision
+Applied --> Cancelled : owner cancels before acceptance
+Applied --> Applied : merchant offers alternate schedule
+Quoted --> Quoted : supersede unaccepted revision under schedule lock
+Quoted --> AwaitingDeposit : accept current quote and terms
+AwaitingDeposit --> DepositReview : timely proof
+AwaitingDeposit --> Cancelled : confirmed no transfer, release unused window
+AwaitingDeposit --> Expired : deadline without timely proof
+Quoted --> Expired : deadline, no timely proof
+Quoted --> Cancelled : before accepting
+DepositReview --> Booked : verify funds and confirm effective balance deadline [DEC-021]
+DepositReview --> Exception : verified late and fulfilment infeasible [DEC-021]
+DepositReview --> Cancelled : explicit rejection, release unused window
+DepositReview --> Exception : unresolved payment mismatch
+Exception --> Booked : agreed reschedule + resource swap + effective balance
+Exception --> Proceeding : agreed reschedule and balance already settled
+Exception --> Cancelled : documented disposition and refund reconciliation
+Booked --> Proceeding : verify original balance
+Booked --> BalanceGrace : overdue reminder
+BalanceGrace --> Proceeding : verify original balance
+BalanceGrace --> Cancelled : after cutoff, merchant confirms no funds and review resolved
+BalanceGrace --> Cancelled : merchant inability creates full-refund obligations
+BalanceGrace --> BalanceGrace : timely balance proof retains slot through review [DEC-026]
+Booked --> Cancelled : merchant inability creates full-refund obligations
+Proceeding --> EquipmentCheck : record setup and teardown
+Proceeding --> Cancelled : merchant inability creates full-refund obligations
+Proceeding --> Proceeding : customer request denied, no refund
+EquipmentCheck --> Completed : checked, no extras
+EquipmentCheck --> AdditionalBill : itemized separate charge
+AdditionalBill --> Completed : verified extra payment
+note right of DepositReview
+  Worker cannot release a timely reviewed slot.
+  Transfer or recorded proof blocks customer cancellation.
+end note
+@enduml

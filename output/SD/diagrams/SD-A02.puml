@@ -1,0 +1,26 @@
+@startuml
+title SD-A02 — Standard checkout runtime
+caption To-Be draft | F01–F04 · Backend / Integration
+actor Customer as C
+boundary "FastAPI behind Next.js relay" as API
+control Order
+database PostgreSQL as DB
+actor Merchant as M
+C -> API : Submit authenticated order
+API -> Order : Validate snapshot and idempotency
+alt Await fee or Cash approval
+ Order -> DB : Store pending order; no allocation
+ M -> API : Provide fee or accept Cash
+ C -> API : Confirm fee when required
+else Direct transfer
+ Order -> DB : Persist order and hold atomically
+end
+alt Capacity unavailable at commitment
+ API --> C : Conflict and refresh options
+else Transfer proof or accepted Cash
+ M -> API : Verify funds or record cash on pickup
+ API -> DB : Guard transition, update charge and record audit
+ DB --> API : Committed
+ API --> C : Return authoritative state
+end
+@enduml

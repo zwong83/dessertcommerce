@@ -1,0 +1,20 @@
+@startuml
+title SD-A03 — Deployment and middleware
+caption To-Be draft | F01–F08 · Delivery / Operations
+node "HTTPS edge" as Edge
+node "Application runtime" {
+ [Next.js web process] as Web
+ [FastAPI process] as API
+ [Independent Python worker] as Worker
+}
+database "PostgreSQL: transactions and durable work" as Db
+cloud "Encrypted private object store" as Blob
+cloud "OTP and notice providers" as Msg
+Edge --> Web : same origin
+Web --> API : private versioned HTTP
+API --> Db : bounded role-specific pool
+Worker --> Db : lease and conditional completion
+API --> Blob : upload and authorized read
+API --> Msg : OTP with deadline
+Worker --> Msg : notice attempt / outcome
+@enduml

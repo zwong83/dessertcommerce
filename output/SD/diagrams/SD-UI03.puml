@@ -1,0 +1,18 @@
+@startuml
+title SD-UI03 — Checkout and fulfilment
+caption To-Be draft | F03 · Frontend · Customer /checkout and /orders/:id · merchant /merchant/orders/:id
+actor User
+boundary "Route and Checkout, FeeReview and OrderTimeline" as UI
+participant "Shared API client" as Client
+participant "Authorized API" as API
+User -> UI : Open view or submit action
+UI -> Client : orders, confirm-fee, fee and order actions
+Client -> API : Fetch or submit with applicable guards
+alt Success
+ API --> Client : Current typed result
+ Client --> UI : Render or refresh authoritative data
+else fee revision changed or invalid handoff
+ API --> Client : Typed failure
+ Client --> UI : Show current quote or recovery action
+end
+@enduml

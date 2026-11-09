@@ -1,0 +1,28 @@
+@startuml
+title SD-UI04 — Standard payment and cash
+caption To-Be draft | F04 · Frontend · Customer /orders/:id · merchant /merchant/orders/:id
+actor User
+boundary "Route and ChargePanel, ProofForm and SettlementReview" as UI
+participant "Shared API client" as Client
+participant "Authorized API" as API
+User -> UI : Open view or submit action
+opt Customer considers cancellation
+ alt Transfer sent or uncertain
+  UI --> User : Show external merchant WhatsApp contact
+ else No transfer
+  UI -> Client : Send versioned cancellation with confirmation
+ end
+end
+UI -> Client : Fetch payment or submit settlement action
+Client -> API : Fetch or submit with applicable guards
+alt Success
+ API --> Client : Current typed result
+ Client --> UI : Render or refresh authoritative data
+ opt Current standard top-up request
+  UI --> User : Show outstanding amount and deadline or proof under review
+ end
+else deadline expired or verification mismatch
+ API --> Client : Typed failure
+ Client --> UI : Refresh order and explain merchant follow-up
+end
+@enduml

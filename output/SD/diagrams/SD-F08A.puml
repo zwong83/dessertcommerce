@@ -1,0 +1,27 @@
+@startuml
+title SD-F08A — Merchant recovery controls
+caption FN-ADM-01–02 · To-Be · Frontend and Identity
+actor Merchant
+boundary "Recovery form" as UI
+control Identity
+database PostgreSQL as DB
+participant "Verified provider" as Provider
+participant "Controlled operator path" as Support
+Merchant -> UI : Recover access
+alt Enrolled channel available
+ UI -> Identity : Request RECOVERY challenge
+ Identity -> Provider : Send to enrolled verified contact
+ UI -> Identity : Submit code
+ Identity -> DB : Lock admin then challenge; verify current credential epoch
+ alt Accepted
+  DB -> DB : Advance epoch, revoke prior sessions and issue new session
+  Identity --> UI : Return to merchant workspace
+ else Unknown or failed
+  Identity --> UI : Generic recovery feedback, no access
+ end
+else All channels lost
+ Merchant -> Support : Request restricted owner verification
+ Support -> DB : Lock admin, advance epoch, revoke sessions and audit
+ Merchant -> UI : Verify newly enrolled contact through same challenge
+end
+@enduml

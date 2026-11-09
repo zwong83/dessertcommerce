@@ -1,0 +1,13 @@
+@startuml
+title SA-S04 — Business notification lifecycle
+caption F07 · Notification ownership · FN-NOT-01–03
+[*] --> Pending : Eligible business milestone recorded
+Pending --> Sending : Worker takes attempt
+Sending --> Delivered : Delivery confirmed
+Sending --> Retry : Transient safe failure and retries remain
+Retry --> Sending : Retry due
+Sending --> FollowUp : Terminal or ambiguous outcome
+FollowUp --> Resolved : Merchant records contact or reconciliation
+FollowUp --> Pending : Explicit safe re-drive
+note right of FollowUp : Business status remains authoritative
+@enduml

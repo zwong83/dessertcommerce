@@ -1,0 +1,22 @@
+@startuml
+title SA-F02B — Calendar change and affected orders
+caption F02 · Capacity and Order · FN-CAL-01–04
+|Merchant|
+start
+:Choose date, closure or quantity change;
+|Capacity|
+:Read current day policy and product commitments;
+|Order|
+:Return scoped affected orders and current states;
+|Merchant|
+:Review occupied quantities and affected order links;
+:Submit reviewed calendar edit;
+|Capacity|
+if (Review current and no limit below commitments?) then (yes)
+ :Save policy and block new incompatible commitments;
+ :Keep existing promises and show affected work;
+else (no)
+ :Reject and refresh the affected order preview;
+endif
+stop
+@enduml

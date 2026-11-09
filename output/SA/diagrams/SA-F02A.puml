@@ -1,0 +1,29 @@
+@startuml
+title SA-F02A — Catalogue and photo lifecycle
+caption F02 · Merchant and Customer · FN-CAT-01–04
+|Merchant|
+start
+:Create or open product draft;
+:Edit classification, fixed options, price and lead time;
+if (Photo added or replaced?) then (yes)
+ :Select and preview candidate photo;
+ |Catalogue|
+ :Check file and role;
+ if (Acceptable photo?) then (yes)
+  :Hold validated candidate for product save;
+ else (no)
+  :Show reason and preserve saved gallery;
+  stop
+ endif
+endif
+|Merchant|
+:Save gallery and product choices;
+|Catalogue|
+if (Valid current version and publication data?) then (yes)
+ :Save draft or apply explicit visibility action;
+ :Expose current listed projection only;
+else (no)
+ :Keep prior saved version and return conflict or field errors;
+endif
+stop
+@enduml

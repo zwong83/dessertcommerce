@@ -1,0 +1,13 @@
+@startuml
+title SA-04 — Customer use cases
+caption Owned customer workspace | PRD US-01–04
+actor Customer
+usecase "Sign in / restore cart" as U1
+usecase "Place and track standard order" as U2
+usecase "Request, accept and track event" as U3
+usecase "Submit proof and see outcome" as U4
+Customer --> U1
+Customer --> U2
+Customer --> U3
+Customer --> U4
+@enduml

@@ -1,0 +1,18 @@
+@startuml
+title SD-UI07 — Notification follow-up
+caption To-Be draft | F07 · Frontend · Customer activity · merchant /merchant/work?kind=NOTICE
+actor User
+boundary "Route and StatusBanner and NoticeQueue" as UI
+participant "Shared API client" as Client
+participant "Authorized API" as API
+User -> UI : Open view or submit action
+UI -> Client : activity reads, work list and resolve notice
+Client -> API : Fetch or submit with applicable guards
+alt Success
+ API --> Client : Current typed result
+ Client --> UI : Render or refresh authoritative data
+else provider uncertain or retries exhausted
+ API --> Client : Typed failure
+ Client --> UI : Keep authoritative status and show follow-up
+end
+@enduml

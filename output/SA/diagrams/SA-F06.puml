@@ -1,0 +1,49 @@
+@startuml
+title SA-F06 — Event settlement and closure
+caption Event payment, service and equipment settlement | PRD-15–17
+start
+:Check quote is at least RM0.02 with both instalments positive;
+:Review 50 percent deposit against the quote and its payment deadline;
+if (Deposit has verified shortfall?) then (yes)
+ if (Current cutoff still ahead?) then (yes)
+  :Notify exact difference without changing cutoff;
+  :Verify each transfer and settle only at exact eligible total;
+ else (no)
+  :Keep actual receipts and route to manual disposition;
+ endif
+endif
+if (Verified and quote eligible?) then (yes)
+ :Confirm booking and show balance deadline;
+ if (Balance has verified shortfall?) then (yes)
+  :Use the existing balance cutoff and verify each transfer;
+  :Route any remaining shortfall after cutoff to manual disposition;
+ endif
+ if (Balance overdue?) then (yes)
+  :Remind, allow 24-hour grace and route to merchant decision;
+  if (Timely balance proof still under review at grace expiry?) then (yes)
+   :Keep resources reserved while merchant reviews actual funds;
+  endif
+  :Allow nonpayment cancellation only after cutoff, resolved review and verified absence of balance funds;
+ endif
+ :Block customer cancellation after transfer and customer-initiated refund after balance payment;
+ if (Booking proceeds?) then (yes)
+  :Complete setup and teardown;
+  :Check equipment, damage and waiting;
+  if (Additional charge?) then (yes)
+   :Itemize charge and reconcile separate payment;
+  endif
+ else (cancelled)
+  :Release unused resources on authorized cancellation;
+  :Refund all receipts if merchant cannot fulfil;
+ endif
+else (no)
+ :Expire quote or send payment anomaly for reconciliation;
+endif
+if (Merchant and customer pursue reschedule?) then (yes)
+ :Retain paid balance or recalculate outstanding due from new date minus three days and add 24 hours grace;
+ if (New due cannot be met?) then (yes)
+  :Agree another date or refund;
+ endif
+endif
+stop
+@enduml

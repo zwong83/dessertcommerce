@@ -1,0 +1,18 @@
+@startuml
+title SD-F05 — Manual event quote and version
+caption To-Be draft | PRD-13–14 / SA-F05 · Event
+actor Customer as C
+actor Merchant as M
+boundary API
+database PostgreSQL as DB
+C -> API : Submit dated event request
+API -> DB : Validate lead and persist once
+M -> API : Confirm assessment, window and terms
+API -> DB : TX-07 serialize schedule, store quote and window
+C -> API : Accept current quote revision
+alt Still offered and within deadline
+ API -> DB : Store consent and expose deposit obligation
+else Expired, superseded or wrong owner
+ API --> C : Refresh current state or deny
+end
+@enduml

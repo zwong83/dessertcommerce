@@ -1,0 +1,11 @@
+@startuml
+title SA-00 — Current merchant process context
+caption Observed manual operating boundary | BRD §1
+actor Customer
+actor Merchant
+rectangle "Existing merchant operations\n[manual]" as M
+rectangle "Payment records\n[fragmented, channel unspecified]" as P
+Customer --> M : enquires and orders
+Merchant --> M : records and checks availability
+M --> P : payment verification [P3]
+@enduml

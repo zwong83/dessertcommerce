@@ -1,0 +1,26 @@
+@startuml
+title SA-F01 — Identity and persistent cart
+caption Owned data access across devices | PRD-01–03
+actor Customer as C
+participant Identity as I
+participant "Verification channel" as V
+participant Cart as T
+C -> I : Start sign-in with phone
+I -> V : Send challenge
+C -> I : Verify challenge
+alt Valid and unused
+ I --> C : Establish account session
+ C -> T : Read or change own cart on this device
+ T -> I : Verify owner scope
+ alt Own account
+  T --> C : Same account cart
+ else Foreign account
+  T --> C : Deny without disclosing cart
+ end
+else Invalid or expired challenge
+ I --> C : Deny and allow safe recovery
+end
+opt One confirmed order
+ T -> T : Consume purchased quantities once
+end
+@enduml

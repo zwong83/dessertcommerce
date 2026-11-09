@@ -1,0 +1,23 @@
+@startuml
+title SA-F08A — Dedicated merchant recovery
+caption F08 · Identity and Merchant Operations · FN-ADM-01–02
+actor "Merchant" as M
+participant "Identity boundary" as I
+participant "Verified channel" as C
+participant "Authorized operator" as O
+M -> I : Request recovery
+alt Previously enrolled verified channel available
+ I -> C : Send bounded admin-only challenge
+ M -> I : Return verification
+ alt Challenge valid and unused
+  I --> M : Recover dedicated admin access
+ else Invalid, expired or unknown contact
+  I --> M : Safe recovery feedback, no session
+ end
+else Neither verified channel available
+ M -> O : Initiate controlled owner verification
+ O -> I : Reset enrolled contact only after approved evidence
+ I -> I : Revoke prior sessions and record audit
+ I --> M : Start new verified challenge
+end
+@enduml

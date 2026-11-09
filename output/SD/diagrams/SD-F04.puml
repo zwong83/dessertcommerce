@@ -1,0 +1,51 @@
+@startuml
+title SD-F04 — Standard proof, expiry and cash
+caption To-Be draft | PRD-10–12 / SA-F04 · Settlement
+actor Customer as C
+actor Merchant as M
+boundary API
+collections "Private evidence" as Obj
+database PostgreSQL as DB
+participant Worker
+alt DuitNow
+ C -> API : Upload proof for owned charge
+ API -> Obj : Validate and store immutable bytes
+ API -> DB : TX-05 lock parent, check database clock and attach
+ Worker -> DB : Same locks for expiry, state and deadline rechecked
+ alt Timely registered proof
+  M -> API : Verify actual funds and reference
+  API -> DB : TX-06 commit receipt and acceptance or exception
+  opt Verified underpayment and active allocation
+   M -> API : Issue top-up request
+   API -> DB : Store 30-minute deadline, notice and expiry work atomically
+   alt Valid top-up proof registered before deadline
+    C -> API : Upload proof
+    API -> DB : Attach proof and retain capacity through review
+    M -> API : Verify actual top-up funds
+    API -> DB : Post once and accept only at exact eligible total
+   else Cutoff reached without timely proof
+    Worker -> DB : Recheck current deadline and release unused hold once
+    API -> DB : Reconcile partial or late funds separately
+   end
+  end
+ else No registered proof at expiry
+  DB -> DB : Expire and release unused hold once
+  opt Late evidence or independently verified funds
+   API -> DB : Open reconciliation case, preserve terminal state
+  end
+ end
+else Cash pickup
+ M -> API : Accept Cash or post collection
+ API -> DB : Guard accepted and pickup states, post once
+end
+opt Customer considers cancellation
+ alt No transfer and eligible state
+  C -> API : Cancel with no-transfer confirmation
+  API -> DB : Recheck version, evidence and eligibility under lock
+ else Transfer sent or uncertain
+  C -> M : Contact merchant via external WhatsApp
+ end
+end
+M -> API : Reconcile, cancel or refund
+API -> DB : TX-06 reserve amount, reconcile payout or void
+@enduml

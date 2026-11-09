@@ -1,0 +1,23 @@
+@startuml
+title SA-F07 — Notifications and support
+caption Business event to external delivery | PRD-18
+participant "Business owner" as B
+participant Notification as N
+participant "Provider boundary" as P
+actor Merchant as M
+B -> N : Record eligible milestone
+N -> P : Send permitted message
+alt Delivered
+ P --> N : Record success
+else Failure
+ loop Until successful or three retries are exhausted
+  N -> P : Retry safely
+ end
+ alt Retry succeeded
+  N -> N : Record success
+ else All attempts failed
+  N -> M : Flag persistent failure for contact
+ end
+end
+note over B,N : Dispatch cannot change business status
+@enduml

@@ -1,0 +1,20 @@
+@startuml
+title SA-S03 — Allocation and settlement lifecycles
+caption Independent state views and guarded effects | PRD-06, PRD-10–12, PRD-15–17
+state Allocation {
+ [*] --> Held
+ Held --> Committed : merchant acceptance or verified transfer
+ Held --> Released : expiry or eligible cancellation
+ Committed --> Released : unused cancellation
+ Committed --> Used : preparation begins
+}
+state Settlement {
+ [*] --> Awaiting
+ Awaiting --> Review : proof
+ Awaiting --> Received : cash at pickup
+ Review --> Received : verified
+ Review --> Disputed : discrepancy
+ Disputed --> Received : resolved
+ Received --> Refunded : permitted adjustment, within paid amount
+}
+@enduml

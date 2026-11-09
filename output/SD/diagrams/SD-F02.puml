@@ -1,0 +1,20 @@
+@startuml
+title SD-F02 — Availability and last-unit allocation
+caption To-Be draft | PRD-04–06 / SA-F02 · Catalogue / Capacity
+actor Browser
+boundary API
+control Capacity
+database PostgreSQL as DB
+Browser -> API : Quote eligibility
+API -> Capacity : Normalize MYT date, lead time and variant quantity
+Capacity -> DB : Read rules and available totals
+API --> Browser : Advisory options
+Browser -> API : Commit checkout or merchant acceptance
+API -> DB : TX-04 lock order then date and read product limits
+alt Both cap checks pass
+ DB -> DB : Create allocation and increment count
+ API --> Browser : Authoritative commitment
+else Sold out, stale or outside window
+ API --> Browser : CAPACITY_UNAVAILABLE / validation
+end
+@enduml

@@ -1,0 +1,19 @@
+@startuml
+title SD-S04 — Product visibility and gallery
+caption FN-CAT-01–04 · To-Be · Catalogue ownership
+[*] --> Draft : create
+Draft --> Listed : validate required catalogue data
+Listed --> Unlisted : unpublish
+Listed --> Suspended : pause orders
+Listed --> SoldOut : mark sold out
+Unlisted --> Listed : republish
+Suspended --> Listed : resume
+SoldOut --> Listed : restore sellability
+Draft --> Archived : archive
+Unlisted --> Archived : archive
+Suspended --> Archived : archive
+SoldOut --> Archived : archive
+Listed --> Archived : archive
+note right of Archived : Historic order snapshot retained
+note right of Listed : Only current attached photos serve customer reads
+@enduml

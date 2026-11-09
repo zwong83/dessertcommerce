@@ -1,0 +1,29 @@
+@startuml
+title SA-S01 — Standard order lifecycle
+caption Order owns progress, Settlement owns verification | PRD-08–12
+[*] --> Intake
+Intake --> AwaitingFee : merchant delivery
+Intake --> AwaitingCash : cash pickup
+Intake --> PendingProof : direct DuitNow and hold
+AwaitingFee --> PendingProof : customer confirms fee and hold
+AwaitingCash --> Accepted : merchant secures capacity
+PendingProof --> Review : timely proof
+PendingProof --> Expired : deadline, no proof
+Review --> Accepted : verified and feasible
+Review --> Exception : disputed payment or missed handoff
+Review --> Review : top-up notice, hold 30 min; timely proof holds through review
+Review --> Expired : top-up cutoff with no timely proof, release unused capacity
+Accepted --> Preparing
+Preparing --> Ready
+Ready --> Completed : handoff or cash receipt
+Ready --> NoShow : pickup not made
+Ready --> Exception : handoff fails
+Intake --> Cancelled : cancellation guard
+AwaitingFee --> Cancelled : customer before payment and acceptance
+AwaitingCash --> Cancelled : customer before acceptance or merchant declines
+PendingProof --> Cancelled : owner confirms no transfer, unaccepted
+PendingProof --> PendingProof : sent or unsure, contact merchant on WhatsApp
+Review --> Review : customer cancellation blocked, WhatsApp follow-up
+Exception --> Cancelled : merchant decision
+Exception --> Accepted : merchant and customer reschedule
+@enduml

@@ -1,0 +1,20 @@
+@startuml
+title SA-F02 — Catalogue and production eligibility
+caption Candidate date and final production decision | PRD-04–06
+start
+:Read current product, closure and prep rules;
+if (Item and handoff eligible?) then (yes)
+ :Show indicative option;
+ if (Acceptance requires allocation?) then (yes)
+  :Adjudicate day and product limits together;
+  if (Enough capacity?) then (yes)
+   :Reserve or commit; show accepted allocation;
+  else (no)
+   :Reject option and show alternatives;
+  endif
+ endif
+else (no)
+ :Exclude unavailable option;
+endif
+stop
+@enduml

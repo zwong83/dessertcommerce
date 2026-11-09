@@ -1,0 +1,11 @@
+@startuml
+title SA-01 — Current manual intake and problem points
+caption Schematic from merchant-confirmed pain points | BRD §1
+start
+:Customer asks about product and date;
+:Merchant records order manually [P1];
+:Merchant checks dates and capacity manually [P1];
+:Payment tracked separately [P3];
+:Customer asks for updates and merchant compiles reports [P2];
+stop
+@enduml

@@ -1,0 +1,18 @@
+@startuml
+title SD-F08 — Merchant work, audit and reporting
+caption To-Be draft | PRD-19–20 / SA-F08 · Merchant Operations
+actor Merchant as M
+boundary API
+control "Role and use case guards" as A
+database PostgreSQL as DB
+M -> API : Open queue or issue protected command
+API -> A : Validate dedicated admin session and CSRF for writes
+alt Authorized command
+ A -> DB : Owner transaction and append audit
+else Authorized read
+ A -> DB : Keyset queue or MYT range query
+ DB --> API : Sanitized data and ledger totals
+else Denied
+ API --> M : Safe unauthorized/forbidden result
+end
+@enduml

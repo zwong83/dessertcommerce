@@ -1,0 +1,17 @@
+@startuml
+title SA-F08 — Admin and reporting
+caption Privileged work and reconciliation | PRD-19–20
+start
+:Verify dedicated merchant administrator;
+if (Authorized?) then (yes)
+ :Review pending work or select report;
+ if (Protected mutation?) then (yes)
+  :Validate transition and record actor, change and reason;
+ else (report)
+  :Derive MYT receipts, refunds and prep demand;
+ endif
+else (no)
+ :Deny without revealing customer data;
+endif
+stop
+@enduml

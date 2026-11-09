@@ -1,0 +1,22 @@
+@startuml
+title SD-UI05 — Event application and quote
+caption To-Be draft | F05 · Frontend · Customer /events/new and /events/:id · merchant /merchant/events/:id
+actor User
+boundary "Route and EventRequestForm, QuoteReview and QuoteEditor" as UI
+participant "Shared API client" as Client
+participant "Authorized API" as API
+User -> UI : Open view or submit action
+opt Customer considers cancellation before deposit verification
+ UI -> User : Ask whether a transfer was sent
+ UI --> User : Explain cancellation is unavailable if sent or uncertain
+end
+UI -> Client : events, quotes, accept-quote or cancel before transfer
+Client -> API : Fetch or submit with applicable guards
+alt Success
+ API --> Client : Current typed result
+ Client --> UI : Render or refresh authoritative data
+else date invalid or quote superseded
+ API --> Client : Typed failure
+ Client --> UI : Keep draft fields or refresh current quote
+end
+@enduml

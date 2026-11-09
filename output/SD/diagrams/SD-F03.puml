@@ -1,0 +1,26 @@
+@startuml
+title SD-F03 — Fee consent, checkout and handoff
+caption To-Be draft | PRD-07–09 / SA-F03 · Order / Fulfilment
+actor Customer as C
+actor Merchant as M
+boundary API
+database PostgreSQL as DB
+C -> API : Submit terms, cart version and idempotency key
+API -> DB : TX-04 snapshot or replay original result
+alt Merchant delivery
+ M -> API : Record serviceability, fee and handoff revision
+ C -> API : Consent to fee revision
+ API -> DB : Check version, final terms and capacity
+else Pickup or customer-arranged delivery
+ API -> DB : Enter Cash acceptance or direct transfer path
+end
+M -> API : Record preparation, readiness and handoff
+alt Handoff fails
+ API -> DB : Record incident and agreed disposition
+ opt Reschedule with consent
+  API -> DB : Swap unused capacity or reserve a new remake generation
+ end
+else Handoff succeeds
+ API -> DB : Guard transition and record timestamps
+end
+@enduml

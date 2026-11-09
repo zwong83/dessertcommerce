@@ -1,0 +1,22 @@
+@startuml
+title SA-F03 — Checkout and handoff
+caption Fulfilment choice to handoff | PRD-07–09
+start
+:Customer reviews contact, fulfilment, time, items and terms;
+if (Merchant arranges Lalamove?) then (yes)
+ :Merchant verifies location, fee and time or offers an alternative;
+ :Customer accepts current fee/time and total;
+else (pickup or customer-arranged)
+ :Show fixed pickup or external delivery terms;
+endif
+:Deduplicate order and coordinate acceptance with settlement;
+if (Driver arrives?) then (yes)
+ :Record arrival separately from preparation and handoff;
+endif
+if (Ready and successfully handed off?) then (yes)
+ :Record time and complete;
+else (not fulfilled)
+ :Record incident and manually arrange next action;
+endif
+stop
+@enduml

@@ -1,0 +1,32 @@
+@startuml
+title SD-F02A — Product editor and photo persistence
+caption FN-CAT-01–04 · To-Be · Frontend, Catalogue and object storage
+actor Merchant
+actor Customer
+boundary "Product Editor" as UI
+control "Catalogue API" as API
+database PostgreSQL as DB
+collections "Catalogue objects" as Blob
+Merchant -> UI : Edit draft and choose image
+UI -> API : Upload bytes for owned merchant product
+API -> API : Check admin, size, type and decoded content
+alt Valid image
+ API -> Blob : Write immutable normalized image
+ API -> DB : Stage media for this product
+ API --> UI : Stage ID and protected preview
+ Merchant -> UI : Reorder, replace or remove; save
+ UI -> API : PUT product with If-Match and ordered media IDs
+ API -> DB : Lock product and replace gallery atomically
+ alt Current version and valid IDs
+  DB --> API : Saved version, audit and current gallery
+  API --> UI : Refresh saved product
+ else Conflict or foreign media
+  API --> UI : Preserve draft and prior saved gallery
+ end
+else Invalid or failed upload
+ API --> UI : Actionable error; keep saved gallery
+end
+Customer -> API : Read photo for listed product
+API -> DB : Verify session and current attachment
+API -> Blob : Read authorized media only
+@enduml

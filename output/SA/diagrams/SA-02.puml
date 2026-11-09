@@ -1,0 +1,22 @@
+@startuml
+title SA-02 — Target context and trust boundaries
+caption New platform and external responsibilities | PRD §8
+actor Customer as C
+actor "Merchant admin" as M
+rectangle "SweetCommerce logical boundary" {
+[Customer workspace] as CW
+[Merchant workspace] as MW
+[Business capabilities] as B
+}
+cloud "Verification / notification providers" as N
+rectangle "DuitNow or Cash\nexternal/manual funds confirmation" as P
+rectangle "Lalamove\nexternal/manual arrangement" as L
+C --> CW
+M --> MW
+CW --> B
+MW --> B
+B --> N : permitted contact and messages
+M --> P : independently verifies funds
+M --> L : arranges or records handoff
+C --> L : may independently arrange delivery
+@enduml

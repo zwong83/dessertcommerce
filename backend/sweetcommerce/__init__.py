@@ -1,0 +1,1 @@
+"""SweetCommerce application and worker."""

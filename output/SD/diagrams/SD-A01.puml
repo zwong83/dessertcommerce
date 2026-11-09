@@ -1,0 +1,30 @@
+@startuml
+title SD-A01 — Architecture and trust boundaries
+caption To-Be draft | F01–F08 · Backend Architecture
+actor Customer
+actor Merchant
+rectangle "Browser trust boundary" {
+ [Customer Storefront] as Store
+ [Merchant Admin Portal] as Portal
+}
+rectangle "Application deployment" {
+ [Next.js storefront and portal relay] as Web
+ [FastAPI HTTP adapter] as Http
+ [Use cases and domain modules] as App
+ [Python worker] as Worker
+}
+database "PostgreSQL 16" as Pg
+cloud "Private proof storage" as Obj
+cloud "Verification / notification channels" as Provider
+Customer --> Store
+Merchant --> Portal
+Store --> Web
+Portal --> Web
+Web --> Http : versioned API, forwarded session
+Http --> App : session, ownership and CSRF
+Worker --> App : leased, authorized operations
+App --> Pg : business facts and work
+App --> Obj : validated proofs
+Worker --> Provider : approved contact and template
+App --> Provider : OTP only
+@enduml

@@ -1,0 +1,39 @@
+@startuml
+title SA-S02 — Event quote and booking lifecycle
+caption Event resource and financial gates | PRD-13–17
+[*] --> Applied
+Applied --> Quoted : record tentative window
+Applied --> Cancelled : owner cancels before quote acceptance
+Applied --> Applied : merchant proposes alternative schedule, no commitment
+Quoted --> AwaitingDeposit : accept current quote
+AwaitingDeposit --> DepositReview : timely valid proof registered
+AwaitingDeposit --> Cancelled : customer confirms no transfer, release unused window
+AwaitingDeposit --> Expired : deadline without timely proof
+Quoted --> Expired : deadline without timely proof
+Quoted --> Cancelled : free cancellation before quote acceptance
+DepositReview --> Booked : verify and apply DEC-021 balance deadline
+DepositReview --> PaymentException : verified but no longer feasible [DEC-021]
+DepositReview --> PaymentException : late or mismatched receipt
+DepositReview --> Cancelled : merchant explicitly rejects, release unused window
+PaymentException --> Booked : reconciled and booking eligible
+PaymentException --> Booked : agreed reschedule and valid effective balance recorded
+PaymentException --> Proceeding : agreed reschedule and balance already settled
+PaymentException --> Cancelled : refund disposition recorded
+Booked --> Proceeding : balance verified
+Booked --> Grace : balance overdue
+Grace --> Proceeding : balance verified
+Grace --> Cancelled : after cutoff, merchant verifies no balance funds and review is resolved
+Grace --> Cancelled : merchant unable, full refund of receipts
+Grace --> Grace : timely balance proof holds slot through review [DEC-026]
+Proceeding --> EquipmentCheck : setup and teardown complete
+Proceeding --> Cancelled : merchant unable, full refund of receipts
+Proceeding --> Proceeding : customer cancellation denied, no refund
+EquipmentCheck --> AdditionalBill : charge applicable
+EquipmentCheck --> Completed : no charge
+AdditionalBill --> Completed : verify receipt
+Booked --> Cancelled : merchant unable, full refund of receipts
+note right of DepositReview
+  Timely proof keeps the tentative window [DEC-020].
+  Sending a transfer ends customer cancellation [DEC-023].
+end note
+@enduml

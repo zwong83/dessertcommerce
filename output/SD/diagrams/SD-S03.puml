@@ -1,0 +1,12 @@
+@startuml
+title SD-S03 — Durable work and dispatch
+caption To-Be · Worker and Notification · F04/F06/F07 · TX-08
+[*] --> Ready : domain effect + durable intent
+Ready --> Leased : claim fenced batch
+Leased --> Ready : eligible retry or lease timeout
+Leased --> Succeeded : owning transition or verified dispatch
+Leased --> Dead : terminal or unknown external outcome
+Dead --> Ready : operator authorizes reconciled replay
+Succeeded --> [*]
+note right of Leased : External I/O runs outside database locks
+@enduml

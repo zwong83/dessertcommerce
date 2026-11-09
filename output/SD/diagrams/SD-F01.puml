@@ -1,0 +1,27 @@
+@startuml
+title SD-F01 — OTP and cart version
+caption To-Be draft | PRD-01–03 / SA-F01 · Identity / Cart
+actor Customer as C
+boundary Web
+control Identity
+database PostgreSQL as DB
+participant "OTP adapter" as OTP
+C -> Web : Initiate challenge
+Web -> Identity : Normalize contact and rate-limit
+Identity -> DB : Persist verifier and expiry
+Identity -> OTP : Send under deadline
+C -> Web : Verify code
+Web -> DB : TX-01 lock and consume challenge
+alt Valid unused code
+ DB --> Web : Account session
+ C -> Web : Load or change own cart
+ Web -> DB : TX-02 owner lock and version check
+ alt Version current
+  DB --> Web : New cart version
+ else Stale write
+  Web --> C : VERSION_CONFLICT, refetch
+ end
+else Expired, replayed or provider failure
+ Web --> C : Safe failure, no session
+end
+@enduml
