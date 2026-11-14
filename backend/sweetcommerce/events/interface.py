@@ -42,7 +42,7 @@ def router(service, identity, origin):
 
     @routes.post("/admin/events/{event_id}/quotes")
     async def issue_quote(request: Request, event_id: str):
-        return await mutate(request, event_id, service.issue_event_quote, domain.QUOTE_FIELDS, "ADMIN")
+        return await mutate(request, event_id, service.issue_event_quote, domain.QUOTE_FIELDS + domain.QUOTE_BILLING_FIELDS, "ADMIN")
 
     @routes.post("/events/{event_id}/accept-quote")
     async def accept_quote(request: Request, event_id: str):

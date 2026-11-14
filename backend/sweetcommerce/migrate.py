@@ -11,6 +11,11 @@ MIGRATIONS = (
     (1, "0001-standard-ordering.sql"),
     (2, "0002-dessert-table-service.sql"),
     (3, "0003-notice-delivery.sql"),
+    (4, "0004-customer-authentication.sql"),
+    (5, "0005-password-registration.sql"),
+    (6, "0006-customer-account-settings.sql"),
+    (7, "0007-merchant-credentials.sql"),
+    (8, "0008-event-invoices.sql"),
 )
 
 

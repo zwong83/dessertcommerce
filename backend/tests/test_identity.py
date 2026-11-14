@@ -11,7 +11,7 @@ from sweetcommerce.identity import IdentityService
 from sweetcommerce.identity.domain import is_eligible_challenge
 from sweetcommerce.identity.infrastructure import IdentityCrypto, token_hash
 
-# These vectors come from src/server/identity/crypto.ts with a synthetic key.
+# These vectors come from frontend/server/identity/crypto.ts with a synthetic key.
 KEY = bytes([9]) * 32
 CHALLENGE_ID = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee"
 PHONE = "+60100001234"
@@ -89,6 +89,8 @@ def test_customer_challenge_http_is_private_role_bound_and_single_use(db, client
     origin = {"Origin": str(client.base_url).rstrip("/")}
     path = "/api/v1/auth/otp"
     phone = "+60100001291"
+    with db.transaction() as conn:
+        conn.execute("INSERT INTO account (id, role, phone_e164) VALUES (%s,'CUSTOMER',%s)", (uuid4(), phone))
     denied = client.post(f"{path}/challenges", json={"phone": phone})
     assert (denied.status_code, denied.json()["code"]) == (400, "ORIGIN_DENIED")
     malformed = client.post(f"{path}/challenges", headers=origin, json={"phone": phone + "\n"})

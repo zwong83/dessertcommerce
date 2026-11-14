@@ -7,13 +7,22 @@ from time import monotonic
 from ..capacity.domain import require_role, uuid
 from ..capacity.infrastructure import command
 from ..clock import utc_now
-from ..problems import Problem, validation
+from ..problems import InvalidTransition, Problem, ResourceNotFound, validation
 from ..values import field_string
 from ..work.domain import work_item
-from . import eligibility, infrastructure as store
+from . import eligibility
+from . import infrastructure as store
 from .domain import (
-    Delivery, FALLBACK_CHANNELS, LEASE_SECONDS, RETRY_DELAYS, SEND_TIMEOUT_SECONDS,
-    destinations, milestone, notice_message, notice_view, safe_delivery,
+    FALLBACK_CHANNELS,
+    LEASE_SECONDS,
+    RETRY_DELAYS,
+    SEND_TIMEOUT_SECONDS,
+    Delivery,
+    destinations,
+    milestone,
+    notice_message,
+    notice_view,
+    safe_delivery,
 )
 
 logger = logging.getLogger(__name__)
@@ -147,10 +156,10 @@ class NoticeService:
             work = self._read(conn, notice_id)
             outcome = notice_view(work, store.attempts(conn, notice_id), None)["status"]
             if work["work_state"] != "DEAD" or outcome not in ("FAILED", "UNKNOWN"):
-                raise Problem("INVALID_TRANSITION", 409, "Only a failed or unknown delivery can be resolved.")
+                raise InvalidTransition("Only a failed or unknown delivery can be resolved.")
             now = self.clock()
             if not store.record_followup(conn, notice_id, admin, disposition, reason, now, context.request_id):
-                raise Problem("INVALID_TRANSITION", 409, "This delivery follow-up has already been recorded.")
+                raise InvalidTransition("This delivery follow-up has already been recorded.")
             response = work_item({**work, "status": "RESOLVED", "updated_at": now, "notice_outcome": outcome})
             response["safeNextAction"] = "No further delivery action is pending."
             return response
@@ -162,5 +171,5 @@ class NoticeService:
     def _read(conn, notice_id):
         work = store.read_notice(conn, notice_id)
         if work is None:
-            raise Problem("NOT_FOUND", 404, "This notice was not found.")
+            raise ResourceNotFound("This notice was not found.")
         return work

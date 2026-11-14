@@ -4,7 +4,7 @@ from datetime import datetime
 from ..clock import utc_now
 from ..db import Database
 from ..identity.domain import Session
-from ..problems import Problem
+from ..problems import AccessDenied, Problem, ValidationProblem, VersionConflict
 from . import infrastructure as store
 from .domain import Cart, valid_quantity
 
@@ -13,7 +13,7 @@ INVALID_QUANTITY = "Enter a quantity from 0 to 999."
 
 def _customer(principal: Session) -> str:
     if principal.role != "CUSTOMER":
-        raise Problem("FORBIDDEN", 403, "Use a customer account for the cart.")
+        raise AccessDenied("Use a customer account for the cart.")
     return principal.account_id
 
 
@@ -38,7 +38,7 @@ class CartService:
     ) -> Cart:
         account_id = _customer(principal)
         if not valid_quantity(quantity):
-            raise Problem("VALIDATION", 422, INVALID_QUANTITY)
+            raise ValidationProblem(INVALID_QUANTITY)
         quantity = int(quantity)
         variant_id = variant_id.lower()
         digest = store.request_digest(variant_id, quantity, expected_version)
@@ -51,15 +51,15 @@ class CartService:
                     raise Problem("IDEMPOTENCY_CONFLICT", 409, "Use a new request for a different cart edit.")
                 return receipt["result_reference"]
             if str(version) != expected_version:
-                raise Problem("VERSION_CONFLICT", 409, "Refresh the cart before changing it.")
+                raise VersionConflict("Refresh the cart before changing it.")
 
             if quantity == 0:
                 store.remove_line(conn, account_id, variant_id)
             else:
                 if not store.is_sellable(conn, variant_id):
-                    raise Problem("VALIDATION", 422, "This selection is no longer available.")
+                    raise ValidationProblem("This selection is no longer available.")
                 if store.cart_is_full(conn, account_id, variant_id):
-                    raise Problem("VALIDATION", 422, "A cart can contain up to 100 selections.")
+                    raise ValidationProblem("A cart can contain up to 100 selections.")
                 store.upsert_line(conn, account_id, variant_id, quantity)
 
             store.bump_cart_version(conn, account_id)

@@ -4,10 +4,10 @@ import test from "node:test";
 import type { Pool } from "pg";
 import {
   allocateCapacity, bumpCapacityImpact, capacityRoutes, commitHeldCapacity, createCapacity, markCapacityUsed, reallocateCapacity, releaseCapacity,
-} from "../src/server/capacity";
-import { withTransaction as transaction, type Queryable } from "../src/server/db";
-import { sessionCookieName } from "../src/server/http/request";
-import { createIdentity } from "../src/server/identity/service";
+} from "../frontend/server/capacity";
+import { withTransaction as transaction, type Queryable } from "../frontend/server/db";
+import { sessionCookieName } from "../frontend/server/http/request";
+import { createIdentity } from "../frontend/server/identity/service";
 import { startTestPostgres } from "./postgres-harness";
 
 const admin = { accountId: randomUUID(), role: "ADMIN" } as const;

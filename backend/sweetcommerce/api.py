@@ -10,7 +10,7 @@ from starlette.exceptions import HTTPException
 from starlette.responses import JSONResponse
 
 from .db import Database
-from .problems import Problem, unavailable
+from .problems import Problem, ResourceNotFound, unavailable
 from .runtime import Settings
 
 logger = logging.getLogger(__name__)
@@ -38,24 +38,26 @@ def create_app(settings: Settings | None = None, *, database=None, clock=None, d
     from .cart.application import CartService
     from .catalogue import interface as catalogue
     from .catalogue.application import CatalogueService
-    from .identity import interface as identity
-    from .identity.application import IdentityService
-    from .notices import interface as notices
-    from .notices.application import NoticeService
     from .events import interface as events
     from .events.application import EventService
     from .fulfilment import interface as fulfilment
     from .fulfilment.application import FulfilmentService
+    from .identity import interface as identity
+    from .identity.application import IdentityService
+    from .invoices import interface as invoices
+    from .invoices.application import InvoiceService
+    from .notices import interface as notices
+    from .notices.application import NoticeService
     from .order import interface as order
     from .order.application import OrderService
     from .proofs import interface as proofs
     from .proofs.application import ProofService
     from .refunds import interface as refunds
     from .refunds.application import RefundService
-    from .settlement import interface as settlement
-    from .settlement.application import SettlementService
     from .reporting import interface as reporting
     from .reporting.application import ReportService
+    from .settlement import interface as settlement
+    from .settlement.application import SettlementService
     from .work import interface as work
     from .work.application import WorkService
 
@@ -97,7 +99,7 @@ def create_app(settings: Settings | None = None, *, database=None, clock=None, d
 
     @app.exception_handler(HTTPException)
     async def unmatched_route(request, error):
-        return _problem_response(request, Problem("NOT_FOUND", 404, "This resource was not found."))
+        return _problem_response(request, ResourceNotFound("This resource was not found."))
 
     def key(purpose: bytes) -> bytes:
         return hmac.digest(settings.identity_key, purpose, "sha256")
@@ -114,7 +116,8 @@ def create_app(settings: Settings | None = None, *, database=None, clock=None, d
         with db.connection() as connection:
             migrated = connection.execute(
                 """SELECT to_regclass('sweetcommerce.event_application') IS NOT NULL
-                    AND to_regprocedure('sweetcommerce.notice_recipient(uuid,uuid)') IS NOT NULL AS ready"""
+                    AND to_regprocedure('sweetcommerce.notice_recipient(uuid,uuid)') IS NOT NULL
+                    AND to_regclass('sweetcommerce.event_invoice') IS NOT NULL AS ready"""
             ).fetchone()["ready"]
         if not migrated:
             raise unavailable()
@@ -129,7 +132,9 @@ def create_app(settings: Settings | None = None, *, database=None, clock=None, d
         new_code=synthetic_code if settings.synthetic_otp else None,
         global_send_limit=settings.send_budget, **clock_args,
     )
-    app.include_router(identity.router(identity_service, settings.origin), prefix="/api/v1")
+    app.include_router(identity.router(
+        identity_service, settings.origin, customer_phone_verification=settings.customer_phone_verification,
+    ), prefix="/api/v1")
     for module, service in (
         (cart, CartService(db, **clock_args)),
         (catalogue, CatalogueService(db, objects, **clock_args)),
@@ -139,6 +144,7 @@ def create_app(settings: Settings | None = None, *, database=None, clock=None, d
         (events, EventService(db, terms=settings.terms, duitnow_qr_url=settings.duitnow_qr_url,
                               whatsapp_url=settings.whatsapp_url, **clock_args)),
         (notices, NoticeService(db, **clock_args)),
+        (invoices, InvoiceService(db, **clock_args)),
         (reporting, ReportService(db)),
         (proofs, ProofService(db, objects, **clock_args)),
         (refunds, RefundService(db)),

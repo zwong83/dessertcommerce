@@ -1,17 +1,46 @@
 import re
 from datetime import UTC, date, datetime, time, timedelta
+from enum import StrEnum
 from zoneinfo import ZoneInfo
 
 from ..capacity.domain import uuid
-from ..problems import Problem, validation
+from ..problems import (
+    InvalidTransition,
+    Problem,
+    ResourceNotFound,
+    VersionConflict,
+    validation,
+)
 from ..values import field_string
 
 MYT = ZoneInfo("Asia/Kuala_Lumpur")
 DAY = timedelta(days=1)
 MAX_MONEY = 999_999_999
-PRE_TRANSFER = {"APPLIED", "QUOTED", "AWAITING_DEPOSIT"}
-BOOKING_STATES = {"BOOKED", "BALANCE_GRACE", "PROCEEDING", "EXCEPTION"}
-ACTIVE_EVENT = PRE_TRANSFER | BOOKING_STATES | {"DEPOSIT_REVIEW", "EQUIPMENT_CHECK", "ADDITIONAL_BILL"}
+MIN_EVENT_LEAD_DAYS = 7
+EVENT_SUBMISSION_CUTOFF = time(22)
+MAX_RESOURCE_WINDOW_DATES = 31
+
+
+class EventStatus(StrEnum):
+    APPLIED = "APPLIED"
+    QUOTED = "QUOTED"
+    AWAITING_DEPOSIT = "AWAITING_DEPOSIT"
+    DEPOSIT_REVIEW = "DEPOSIT_REVIEW"
+    BOOKED = "BOOKED"
+    BALANCE_GRACE = "BALANCE_GRACE"
+    PROCEEDING = "PROCEEDING"
+    EQUIPMENT_CHECK = "EQUIPMENT_CHECK"
+    ADDITIONAL_BILL = "ADDITIONAL_BILL"
+    COMPLETED = "COMPLETED"
+    EXPIRED = "EXPIRED"
+    CANCELLED = "CANCELLED"
+    DECLINED = "DECLINED"
+    EXCEPTION = "EXCEPTION"
+
+
+PRE_TRANSFER = frozenset((EventStatus.APPLIED, EventStatus.QUOTED, EventStatus.AWAITING_DEPOSIT))
+BOOKING_STATES = frozenset((EventStatus.BOOKED, EventStatus.BALANCE_GRACE, EventStatus.PROCEEDING, EventStatus.EXCEPTION))
+ACTIVE_EVENT = PRE_TRANSFER | BOOKING_STATES | frozenset((EventStatus.DEPOSIT_REVIEW, EventStatus.EQUIPMENT_CHECK, EventStatus.ADDITIONAL_BILL))
 SCHEDULE_FIELDS = ("setupReadyAt", "eventStartAt", "eventEndAt", "teardownAt")
 REQUEST_FIELDS = (
     "eventDate", "startAt", "expectedEndAt", "setupReadyAt", "venue", "guestCount", "budgetMinor",
@@ -21,6 +50,7 @@ QUOTE_FIELDS = (
     "totalMinor", "depositDueAt", "balanceDueAt", "resourceWindow", "packageSummary", "equipment",
     "extraChargeTerms", "termsVersion", "resourceAssessment", "schedule", "serviceSummary",
 )
+QUOTE_BILLING_FIELDS = ("invoiceLines", "billingName", "billingAddress")
 ACCEPT_FIELDS = ("quoteId", "quoteVersion", "termsVersion")
 RESCHEDULE_FIELDS = ("schedule", "resourceWindow", "consent", "reason", "obligationDisposition", "balancePlan")
 ACTION_FIELDS = (
@@ -34,15 +64,15 @@ _DATE_TIME = re.compile(
 
 
 def missing():
-    return Problem("NOT_FOUND", 404, "The event was not found.")
+    return ResourceNotFound("The event was not found.")
 
 
 def transition(message="This action is unavailable for the current event."):
-    return Problem("INVALID_TRANSITION", 409, message)
+    return InvalidTransition(message)
 
 
 def stale():
-    return Problem("VERSION_CONFLICT", 409, "Refresh the event and try again.")
+    return VersionConflict("Refresh the event and try again.")
 
 
 def terms_changed():
@@ -123,7 +153,7 @@ def window(value, offered):
     start, end = (instant(value[key], "the resource window") for key in ("startAt", "endAt"))
     if not start <= instant(offered["setupReadyAt"]) <= instant(offered["teardownAt"]) <= end or start >= end:
         raise validation("Include setup through teardown in the resource window.")
-    if (local_day(end) - local_day(start)).days >= 31:
+    if (local_day(end) - local_day(start)).days >= MAX_RESOURCE_WINDOW_DATES:
         raise validation("Use a resource window of at most 31 calendar dates.")
     return start, end
 
@@ -158,7 +188,8 @@ def intake(body):
 
 def check_lead_time(body, now):
     local = now.astimezone(MYT)
-    earliest = local.date() + DAY * (8 if local.time() > time(22) else 7)
+    cutoff_offset = int(local.time() > EVENT_SUBMISSION_CUTOFF)
+    earliest = local.date() + DAY * (MIN_EVENT_LEAD_DAYS + cutoff_offset)
     if calendar_date(body["eventDate"]) < earliest:
         raise validation("Choose a date that meets the seven-day MYT lead time.")
 
@@ -179,7 +210,7 @@ def revision(value):
 
 
 def quote_details(body):
-    object_fields(body, QUOTE_FIELDS)
+    object_fields(body, QUOTE_FIELDS, QUOTE_BILLING_FIELDS)
     total = integer(body["totalMinor"], "the quote total", 2, MAX_MONEY)
     offered = schedule(body["schedule"])
     resource = window(body["resourceWindow"], offered)
@@ -195,6 +226,11 @@ def quote_details(body):
         key: text(body[key], "the quote details", 1500)
         for key in ("packageSummary", "serviceSummary", "extraChargeTerms")
     }
+    if "invoiceLines" in body:
+        snapshot["invoiceLines"] = invoice_lines(body["invoiceLines"], total)
+    for key, limit in (("billingName", 120), ("billingAddress", 500)):
+        if key in body:
+            snapshot[key] = text(body[key], key, limit)
     return {
         "totalMinor": total, "depositDueAt": instant(body["depositDueAt"], "the deposit deadline"),
         "balanceDueAt": instant(body["balanceDueAt"], "the balance deadline"),
@@ -203,6 +239,21 @@ def quote_details(body):
         "staffCount": integer(assessment["staffCount"], "the planned staff count", 1, 999),
         "notes": text(assessment["notes"], "the resource assessment", 1200),
     }
+
+
+def invoice_lines(value, total):
+    lines = []
+    for line in entries(value, 30, minimum=1):
+        object_fields(line, ("description", "quantity", "unitPriceMinor"))
+        quantity = integer(line["quantity"], "the invoice quantity", 1, 9999)
+        price = integer(line["unitPriceMinor"], "the invoice unit price", 1, MAX_MONEY)
+        lines.append({
+            "description": text(line["description"], "the invoice line description", 200),
+            "quantity": quantity, "unitPriceMinor": price, "amountMinor": quantity * price,
+        })
+    if sum(line["amountMinor"] for line in lines) != total:
+        raise validation("Invoice line amounts must add up to the quote total.")
+    return lines
 
 
 def quote_cutoff(details, now):

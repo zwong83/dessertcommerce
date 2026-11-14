@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { CatalogueService, type CatalogueObjectStore } from "../src/server/catalogue";
-import { ApiProblem } from "../src/server/http/problem";
+import { CatalogueService, type CatalogueObjectStore } from "../frontend/server/catalogue";
+import { ApiProblem } from "../frontend/server/http/problem";
 
 const productId = "00000000-0000-4000-8000-000000000001";
 const admin = { accountId: "00000000-0000-4000-8000-000000000002", role: "ADMIN" } as const;

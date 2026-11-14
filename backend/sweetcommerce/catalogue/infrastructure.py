@@ -1,3 +1,5 @@
+from sweetcommerce.problems import ResourceNotFound
+
 """PostgreSQL catalogue queries and private image adapters."""
 
 import os
@@ -133,7 +135,7 @@ def save_variants(conn, product_id, variants):
             variant_id = str(uuid4())
             new_count += 1
         elif variant_id not in existing:
-            raise Problem("NOT_FOUND", 404, "Variant not found.")
+            raise ResourceNotFound("Variant not found.")
         to_save.append({**variant, "id": variant_id})
 
     if len(existing) + new_count > MAX_VARIANTS:

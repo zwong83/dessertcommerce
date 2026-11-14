@@ -1,9 +1,10 @@
 import re
 from datetime import UTC, datetime
 
-from ..capacity.domain import date_millis
+from ..capacity.domain import FulfilmentMode, date_millis
 from ..problems import validation
 from ..values import field_string, field_uuid
+from .domain import PaymentMethod
 
 CHECKOUT_FIELDS = (
     "items", "requestedHandoffAt", "fulfilment", "cartVersion", "contactName", "phone",
@@ -70,7 +71,7 @@ def _integer_in_range(value: object, maximum: int) -> bool:
 def _checkout(body: dict) -> dict:
     fulfilment = body.get("fulfilment")
     cart_version = body.get("cartVersion")
-    if fulfilment not in ("PICKUP", "MERCHANT_LALAMOVE", "CUSTOMER_LALAMOVE"):
+    if fulfilment not in (FulfilmentMode.PICKUP, FulfilmentMode.MERCHANT_LALAMOVE, FulfilmentMode.CUSTOMER_LALAMOVE):
         raise validation("Choose a handoff method.")
     if not _integer_in_range(cart_version, 9_007_199_254_740_991):
         raise validation("Refresh the cart version.")
@@ -91,7 +92,7 @@ def _checkout(body: dict) -> dict:
     items.sort(key=lambda item: item["variantId"])
     if len({item["variantId"] for item in items}) != len(items):
         raise validation("Enter each selection once.")
-    if fulfilment == "PICKUP" and "address" in body:
+    if fulfilment == FulfilmentMode.PICKUP and "address" in body:
         raise validation("Pickup uses the merchant pickup point.")
 
     # Key order is part of the digest shared with existing TypeScript reviews.
@@ -103,7 +104,7 @@ def _checkout(body: dict) -> dict:
         "contactName": _text(body.get("contactName"), "the contact name", 120),
         "phone": _text(body.get("phone"), "the contact phone", 24),
     }
-    if fulfilment != "PICKUP":
+    if fulfilment != FulfilmentMode.PICKUP:
         result["address"] = _delivery_address(body.get("address"))
     if "notificationEmail" in body:
         result["notificationEmail"] = _text(body["notificationEmail"], "the notification email", 254, EMAIL)
@@ -117,7 +118,7 @@ def parse_checkout_review(value: object) -> dict:
 def parse_submit_order(value: object) -> tuple[dict, dict]:
     body = _fields(value, SUBMIT_FIELDS)
     payment_method = body.get("paymentMethod")
-    if payment_method not in ("DUITNOW", "CASH"):
+    if payment_method not in (PaymentMethod.DUITNOW, PaymentMethod.CASH):
         raise validation("Choose a payment method.")
     return _checkout(body), {
         "paymentMethod": payment_method,

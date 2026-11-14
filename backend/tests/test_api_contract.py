@@ -25,6 +25,8 @@ PORT_OPERATIONS = {
 
 
 COMMERCIAL = json.loads((ROOT / "output/SD/contracts/sweetcommerce-v1.0.4.1.openapi.json").read_text())
+CUSTOMER_AUTH = json.loads((ROOT / "output/SD/contracts/customer-auth-v1.openapi.json").read_text())
+INVOICES = json.loads((ROOT / "output/SD/contracts/event-invoices-v1.openapi.json").read_text())
 
 
 def _paths(document):
@@ -59,14 +61,18 @@ def test_python_provider_exposes_all_standard_operations(client):
     assert reference <= actual
 
 
-def test_python_provider_matches_all_61_commercial_operation_paths(client):
+def test_python_provider_matches_commercial_and_extension_operation_paths(client):
     def normalize(document, prefix=""):
         return {(method, prefix + re.sub(r"\{[^}]+\}", "{}", path))
                 for method, path, _ in _paths(document)}
 
     expected = normalize(COMMERCIAL, API)
     assert len(expected) == 61
-    assert normalize(client.app.openapi()) == expected
+    auth = normalize(CUSTOMER_AUTH, API)
+    assert len(auth) == 12 and not expected & auth
+    invoices = normalize(INVOICES, API)
+    assert len(invoices) == 9 and not invoices & (expected | auth)
+    assert normalize(client.app.openapi()) == expected | auth | invoices
 
 
 @pytest.mark.parametrize(("path", "operation"), [

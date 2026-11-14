@@ -11,7 +11,7 @@ function sourceFiles(dir: string): string[] {
 }
 
 test("web routes cannot reach PostgreSQL or repository adapters directly", () => {
-  for (const file of sourceFiles("src/app")) {
+  for (const file of sourceFiles("frontend/app")) {
     const source = readFileSync(file, "utf8");
     assert.doesNotMatch(source, /(?:from\s*|import\s*\(\s*)["'](?:pg["']|[^"']*(?:\/persistence|\/repositories)\b)/, file);
   }

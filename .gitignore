@@ -1,6 +1,7 @@
 node_modules/
 .next/
 .cache/
+__pycache__/
 coverage/
 *.tsbuildinfo
 next-env.d.ts

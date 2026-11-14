@@ -22,20 +22,20 @@
     ],
     "paths": {
       "@/*": [
-        "./src/*"
+        "./frontend/*"
       ]
     },
     "allowJs": true,
     "resolveJsonModule": true
   },
   "include": [
-    "next-env.d.ts",
-    "src/**/*.ts",
-    "src/**/*.tsx",
+    "frontend/next-env.d.ts",
+    "frontend/**/*.ts",
+    "frontend/**/*.tsx",
     "scripts/**/*.ts",
     "tests/**/*.ts",
-    ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts"
+    "frontend/.next/types/**/*.ts",
+    "frontend/.next/dev/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"

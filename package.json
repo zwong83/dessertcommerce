@@ -6,18 +6,20 @@
     "node": ">=22.13.0"
   },
   "scripts": {
-    "dev": "next dev --hostname 127.0.0.1",
-    "build": "next build",
-    "start": "next start --hostname 127.0.0.1",
-    "worker": "tsx src/server/worker/main.ts",
-    "check:types": "next typegen && tsc --noEmit",
+    "dev": "next dev frontend --hostname 127.0.0.1",
+    "build": "next build frontend",
+    "start": "next start frontend --hostname 127.0.0.1",
+    "worker": "tsx frontend/server/worker/main.ts",
+    "check:types": "next typegen frontend && tsc --noEmit",
     "test": "tsx --test tests/*.test.ts",
     "check": "npm run contract:check && npm run check:types && npm test",
     "contract:generate": "node scripts/generate-contract.mjs",
     "contract:check": "node scripts/generate-contract.mjs --check",
-    "dev:isolated": "tsx scripts/dev-isolated.ts"
+    "dev:isolated": "tsx scripts/dev-isolated.ts",
+    "dev:persistent": "node --env-file=.env.persistent.local --import tsx scripts/dev-isolated.ts --persistent"
   },
   "dependencies": {
+    "libphonenumber-js": "1.13.16",
     "next": "16.4.5",
     "pg": "8.23.1",
     "react": "19.3.1",

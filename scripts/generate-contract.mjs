@@ -3,7 +3,7 @@ import openapiTS, { astToString } from "openapi-typescript";
 
 const source = new URL("../output/SD/contracts/sweetcommerce-v1.0.4.openapi.json", import.meta.url);
 const design = new URL("../openspec/changes/standard-dessert-ordering/design.md", import.meta.url);
-const destination = new URL("../src/contracts/standard-v1.ts", import.meta.url);
+const destination = new URL("../frontend/contracts/standard-v1.ts", import.meta.url);
 
 const document = JSON.parse(await readFile(source, "utf8"));
 const designText = await readFile(design, "utf8");
@@ -38,7 +38,7 @@ if (process.argv.includes("--check")) {
 }
 
 const commercialSource = new URL("../output/SD/contracts/sweetcommerce-v1.0.4.1.openapi.json", import.meta.url);
-const commercialDestination = new URL("../src/contracts/commercial-v1.ts", import.meta.url);
+const commercialDestination = new URL("../frontend/contracts/commercial-v1.ts", import.meta.url);
 const commercial = JSON.parse(await readFile(commercialSource, "utf8"));
 const commercialOperations = Object.values(commercial.paths).flatMap((entry) =>
   Object.values(entry).filter((operation) => typeof operation.operationId === "string"),
@@ -55,4 +55,27 @@ if (process.argv.includes("--check")) {
   }
 } else {
   await writeFile(commercialDestination, commercialTypes);
+}
+
+const customerAuth = JSON.parse(await readFile(new URL("../output/SD/contracts/customer-auth-v1.openapi.json", import.meta.url), "utf8"));
+const customerAuthDestination = new URL("../frontend/contracts/customer-auth-v1.ts", import.meta.url);
+const customerAuthTypes = "// Generated from the customer authentication extension.\n" + astToString(await openapiTS(customerAuth));
+if (process.argv.includes("--check")) {
+  if (await readFile(customerAuthDestination, "utf8") !== customerAuthTypes) {
+    throw new Error("Regenerate the checked contract types with npm run contract:generate.");
+  }
+} else {
+  await writeFile(customerAuthDestination, customerAuthTypes);
+}
+
+const invoicesSource = new URL("../output/SD/contracts/event-invoices-v1.openapi.json", import.meta.url);
+const invoicesDestination = new URL("../frontend/contracts/event-invoices-v1.ts", import.meta.url);
+const invoiceTypes = "// Generated from the event invoice extension.\n"
+  + astToString(await openapiTS(JSON.parse(await readFile(invoicesSource, "utf8"))));
+if (process.argv.includes("--check")) {
+  if (await readFile(invoicesDestination, "utf8") !== invoiceTypes) {
+    throw new Error("Regenerate the checked contract types with npm run contract:generate.");
+  }
+} else {
+  await writeFile(invoicesDestination, invoiceTypes);
 }

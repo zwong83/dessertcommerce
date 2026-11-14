@@ -5,11 +5,18 @@ from ..capacity.infrastructure import command
 from ..capacity.order import release_capacity
 from ..db import one, rows
 from ..order.infrastructure import missing
-from ..problems import Problem, validation
+from ..problems import Problem, VersionConflict, validation
 from ..values import field_string, field_uuid
 from ..work.queue import milestone
 from . import infrastructure as store
-from .domain import ACTIVE_CHARGE, ACTIVE_ORDER, case_view, invalid_transition, proof_view, refund_view
+from .domain import (
+    ACTIVE_CHARGE,
+    ACTIVE_ORDER,
+    case_view,
+    invalid_transition,
+    proof_view,
+    refund_view,
+)
 
 
 def _instant(value):
@@ -100,7 +107,7 @@ class SettlementService:
     def _confirm(self, conn, admin, charge_id, details, context):
         order, charge = store.lock_charge(conn, charge_id)
         if charge["version"] != details["expectedVersion"]:
-            raise Problem("VERSION_CONFLICT", 409, "Refresh the charge before posting a movement.")
+            raise VersionConflict("Refresh the charge before posting a movement.")
         now = self._now(conn)
         if _instant(details["receivedAt"]) > now:
             raise validation("The actual movement time cannot be in the future.")

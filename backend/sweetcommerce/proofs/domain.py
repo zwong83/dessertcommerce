@@ -6,19 +6,28 @@ from datetime import UTC, datetime
 from uuid import UUID
 
 from ..fulfilment.domain import ACTIVE as ACTIVE_FULFILMENT
-from ..problems import Problem
+from ..problems import (
+    AccessDenied,
+    AuthenticationRequired,
+    DependencyUnavailable,
+    InvalidTransition,
+    Problem,
+    ResourceNotFound,
+    ValidationProblem,
+)
+from ..settlement.domain import ACTIVE_CHARGE
 from ..values import UUID_PATTERN
 
 MAX_PROOF_BYTES = 5 * 1024 * 1024
 MEDIA_EXTENSIONS = {"image/jpeg": "jpg", "image/png": "png", "application/pdf": "pdf"}
-ACTIVE_CHARGES = {"OPEN", "PROOF_REVIEW", "DISPUTED"}
+ACTIVE_CHARGES = ACTIVE_CHARGE
 
 
 def require_role(actor, role: str) -> str:
     if actor is None:
-        raise Problem("UNAUTHENTICATED", 401, "Sign in to continue.")
+        raise AuthenticationRequired("Sign in to continue.")
     if actor.role != role:
-        raise Problem("FORBIDDEN", 403, "This account cannot access payment evidence.")
+        raise AccessDenied("This account cannot access payment evidence.")
     return identifier(str(actor.account_id), "the account")
 
 
@@ -45,19 +54,19 @@ def oversized() -> Problem:
 
 
 def invalid_file() -> Problem:
-    return Problem("VALIDATION", 422, "Upload a complete, valid payment proof file.")
+    return ValidationProblem("Upload a complete, valid payment proof file.")
 
 
 def missing() -> Problem:
-    return Problem("NOT_FOUND", 404, "Payment evidence resource not found.")
+    return ResourceNotFound("Payment evidence resource not found.")
 
 
 def storage_unavailable() -> Problem:
-    return Problem("DEPENDENCY_UNAVAILABLE", 503, "Payment evidence storage is temporarily unavailable.")
+    return DependencyUnavailable("Payment evidence storage is temporarily unavailable.")
 
 
 def invalid_transition() -> Problem:
-    return Problem("INVALID_TRANSITION", 409, "This charge cannot receive payment evidence.")
+    return InvalidTransition("This charge cannot receive payment evidence.")
 
 
 def standard_disposition(order: dict, charge: dict, now: datetime) -> str:

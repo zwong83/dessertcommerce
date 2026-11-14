@@ -3,14 +3,14 @@ from uuid import uuid4
 
 from ..capacity.infrastructure import lock_capacity_dates
 from ..db import one
-from ..events.domain import local_day
+from ..events.domain import EventStatus, local_day
 from ..problems import Problem, validation
 from ..settlement import infrastructure as store
 from ..settlement.domain import ACTIVE_CHARGE, invalid_transition, proof_view
 from ..worker.infrastructure import timely_review_exists
 
-DEPOSIT_STATES = ("AWAITING_DEPOSIT", "DEPOSIT_REVIEW")
-BALANCE_STATES = ("BOOKED", "BALANCE_GRACE")
+DEPOSIT_STATES = (EventStatus.AWAITING_DEPOSIT, EventStatus.DEPOSIT_REVIEW)
+BALANCE_STATES = (EventStatus.BOOKED, EventStatus.BALANCE_GRACE)
 GRACE = timedelta(hours=24)
 
 
@@ -271,6 +271,9 @@ def _confirm_deposit(conn, event, charge, plan, proof, now, days):
         WHERE id = %s RETURNING *
     """, (now, local_day(quote["event_start_at"]), quote["event_start_at"], quote["event_end_at"],
           quote["setup_ready_at"], due, grace, int(decision is not None), now, event["id"]))
+    from ..invoices.application import issue_booking
+
+    issue_booking(conn, effective, quote["id"], now)
     enqueue_balance_work(conn, effective, now)
     notice(conn, event, "EVENT_BOOKING_CONFIRMED", quote["id"], now, {"quoteId": str(quote["id"])})
     notice(conn, event, "EVENT_ARRANGEMENTS", quote["id"], now, {"quoteId": str(quote["id"])})

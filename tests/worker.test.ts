@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { runWorker } from "../src/server/worker/loop";
+import { runWorker } from "../frontend/server/worker/loop";
 
 test("worker stops polling after an in-flight iteration drains", async () => {
   const stop = new AbortController();

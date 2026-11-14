@@ -2,12 +2,12 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { ChargeDetails, OrderDetails } from "../src/ui/order-details";
-import { prepareMutation, proofExtension, sendStandard, StandardProblem } from "../src/ui/standard-api";
+import { ChargeDetails, OrderDetails } from "../frontend/ui/order-details";
+import { prepareMutation, proofExtension, sendStandard, StandardProblem } from "../frontend/ui/standard-api";
 import {
   boundedQuery, canAcceptFee, cancellationInput, customerNextStep, isCalendarDate, merchantChargePath, mytInput, proofIssue, whatsAppLink, workTarget,
   type Charge, type JsonInput, type Order, type WorkItem,
-} from "../src/ui/standard-model";
+} from "../frontend/ui/standard-model";
 
 const orderId = "10000000-0000-4000-8000-000000000001";
 const chargeId = "20000000-0000-4000-8000-000000000001";

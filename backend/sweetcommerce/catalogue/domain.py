@@ -5,22 +5,41 @@ import binascii
 import json
 import re
 from dataclasses import dataclass
+from enum import StrEnum
 from hashlib import sha256
 from typing import Protocol
 from uuid import UUID
 
-from sweetcommerce.problems import Problem
+from sweetcommerce.problems import (
+    AccessDenied,
+    AuthenticationRequired,
+    InvalidTransition,
+    Problem,
+    ResourceNotFound,
+    ValidationProblem,
+)
 
 MAX_PHOTO_BYTES = 5 * 1024 * 1024
 MAX_VARIANTS = 100
 MAX_SAFE_INTEGER = 2**53 - 1
+
+
+class ProductStatus(StrEnum):
+    DRAFT = "DRAFT"
+    LISTED = "LISTED"
+    UNLISTED = "UNLISTED"
+    SUSPENDED = "SUSPENDED"
+    SOLD_OUT = "SOLD_OUT"
+    ARCHIVED = "ARCHIVED"
+
+
 TRANSITIONS = {
-    "DRAFT": ("DRAFT", "LISTED", "ARCHIVED"),
-    "LISTED": ("LISTED", "UNLISTED", "SUSPENDED", "SOLD_OUT", "ARCHIVED"),
-    "UNLISTED": ("UNLISTED", "LISTED", "ARCHIVED"),
-    "SUSPENDED": ("SUSPENDED", "LISTED", "ARCHIVED"),
-    "SOLD_OUT": ("SOLD_OUT", "LISTED", "ARCHIVED"),
-    "ARCHIVED": (),
+    ProductStatus.DRAFT: (ProductStatus.DRAFT, ProductStatus.LISTED, ProductStatus.ARCHIVED),
+    ProductStatus.LISTED: (ProductStatus.LISTED, ProductStatus.UNLISTED, ProductStatus.SUSPENDED, ProductStatus.SOLD_OUT, ProductStatus.ARCHIVED),
+    ProductStatus.UNLISTED: (ProductStatus.UNLISTED, ProductStatus.LISTED, ProductStatus.ARCHIVED),
+    ProductStatus.SUSPENDED: (ProductStatus.SUSPENDED, ProductStatus.LISTED, ProductStatus.ARCHIVED),
+    ProductStatus.SOLD_OUT: (ProductStatus.SOLD_OUT, ProductStatus.LISTED, ProductStatus.ARCHIVED),
+    ProductStatus.ARCHIVED: (),
 }
 UUID_PATTERN = re.compile(r"[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}")
 # ECMAScript whitespace, used by the original validation and normalized digests.
@@ -60,9 +79,9 @@ class CataloguePhoto:
     media_type: str
 
 
-class CatalogueValidationProblem(Problem):
+class CatalogueValidationProblem(ValidationProblem):
     def __init__(self, field: str, code: str, message: str):
-        super().__init__("VALIDATION", 422, message)
+        super().__init__(message)
         self.field_errors = [{"field": field, "code": code}]
 
 
@@ -78,18 +97,18 @@ def is_uuid(value):
 
 def require_role(principal: Principal | None, role: str) -> str:
     if principal is None or not is_uuid(str(principal.account_id)):
-        raise Problem("UNAUTHENTICATED", 401, "Sign in to continue.")
+        raise AuthenticationRequired("Sign in to continue.")
     if principal.role != role:
-        raise Problem("FORBIDDEN", 403, "This account cannot access the requested catalogue operation.")
+        raise AccessDenied("This account cannot access the requested catalogue operation.")
     return str(principal.account_id).lower()
 
 
 def missing_product():
-    return Problem("NOT_FOUND", 404, "Product not found.")
+    return ResourceNotFound("Product not found.")
 
 
 def missing_photo():
-    return Problem("NOT_FOUND", 404, "Photo not found.")
+    return ResourceNotFound("Photo not found.")
 
 
 def path_id(value, missing):
@@ -180,7 +199,7 @@ def validate_update(body):
     if len(set(image_refs)) != len(image_refs):
         raise CatalogueValidationProblem("imageRefs", "DUPLICATE_PHOTO", "Include each photo at most once.")
 
-    if status == "LISTED":
+    if status == ProductStatus.LISTED:
         if "category" in body and category is None:
             raise missing_category()
         if not any(variant["available"] for variant in variants):
@@ -199,12 +218,12 @@ def missing_category():
 
 def require_transition(current, next_status):
     if next_status not in TRANSITIONS[current]:
-        raise Problem("INVALID_TRANSITION", 409, "This product cannot move to the selected status.")
+        raise InvalidTransition("This product cannot move to the selected status.")
 
 
 def require_photo_staging(status):
-    if status == "ARCHIVED":
-        raise Problem("INVALID_TRANSITION", 409, "Archived products cannot stage new photos.")
+    if status == ProductStatus.ARCHIVED:
+        raise InvalidTransition("Archived products cannot stage new photos.")
 
 
 def encode_cursor(prefix: str, product_id: str) -> str:

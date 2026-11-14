@@ -1,15 +1,15 @@
+import hashlib
+import json
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from datetime import date
-import hashlib
-import json
 from uuid import uuid4
 
 from psycopg import Connection
 from psycopg.types.json import Jsonb
 
 from sweetcommerce.db import iso, one, rows
-from sweetcommerce.problems import Problem
+from sweetcommerce.problems import Problem, ResourceNotFound
 
 from .domain import Timestamp, date_millis, uuid
 
@@ -147,7 +147,7 @@ def check_products(conn: Connection, edit: dict, *, lock: bool) -> None:
     if lock:
         query += " FOR KEY SHARE"
     if len(rows(conn, query, (products,))) != len(products):
-        raise Problem("NOT_FOUND", 404, "A product was not found.")
+        raise ResourceNotFound("A product was not found.")
 
 
 def protected_counts(conn: Connection, edit: dict, day: dict | None) -> dict:

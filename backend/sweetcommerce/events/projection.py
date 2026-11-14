@@ -29,6 +29,7 @@ def quote_view(quote):
         "termsVersion": quote["terms_version"], "termsText": snapshot["termsText"],
         "packageSummary": snapshot["packageSummary"], "serviceSummary": snapshot["serviceSummary"],
         "equipment": snapshot["equipment"], "extraChargeTerms": snapshot["extraChargeTerms"],
+        **{key: snapshot[key] for key in ("invoiceLines", "billingName", "billingAddress") if key in snapshot},
         "schedule": quote_schedule(quote),
     }
 
@@ -106,7 +107,7 @@ def event_view(conn, event, now, qr_url, *, admin=False, merchant=False):
         "safeOutcome": OUTCOMES.get(event["status"]),
         "extraInvoices": [{
             "chargeId": str(item["id"]), "dueAt": wire(item["due_at"]), "lines": item["bill_snapshot"]["lines"],
-        } for item in charges if item["category"] == "EVENT_EXTRA"],
+        } for item in charges if admin and item["category"] == "EVENT_EXTRA"],
     }
     if merchant:
         result.update(merchant_details(conn, event_id, quote, changes, equipment))

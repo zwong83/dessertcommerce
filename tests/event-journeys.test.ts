@@ -2,15 +2,15 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { EventDetails, QuoteDetails } from "../src/ui/event-details";
+import { EventDetails, QuoteDetails } from "../frontend/ui/event-details";
 import {
   acceptancePayload, balanceCutoff, canReschedule, earliestRequestDate, equipmentCheckPayload, equipmentOutPayload,
   eventCancellation, eventChargePath, eventWorkTarget, extrasPayload, merchantCancellationOptions, merchantCancellationPayload,
   noticeResolution, quotePayload, requestPayload, reschedulePayload, schedulePayload,
   type EventBooking, type EventCharge, type MerchantEvent, type Notice,
-} from "../src/ui/event-model";
-import { prepareMutation, sendStandard, StandardProblem } from "../src/ui/standard-api";
-import type { WorkItem } from "../src/ui/standard-model";
+} from "../frontend/ui/event-model";
+import { prepareMutation, sendStandard, StandardProblem } from "../frontend/ui/standard-api";
+import type { WorkItem } from "../frontend/ui/standard-model";
 
 const id = (n: number) => "10000000-0000-4000-8000-" + String(n).padStart(12, "0");
 const [eventId, quoteId, chargeId, depositId, equipmentId, noticeId, commandId] = Array.from({ length: 7 }, (_, i) => id(i + 1));
@@ -37,11 +37,12 @@ function form(fields: Record<string, string>) {
   return data;
 }
 const quoteInput = quotePayload(form(quoteFields), ["equipment"], now);
+const { invoiceLines: _invoiceLines, ...quoteWithoutLines } = quoteInput;
 const event: EventBooking = {
   id: eventId, number: "EVT-SYNTHETIC", version: 8, status: "QUOTED",
   request: requestPayload(form(requested), new Date(now)), allowedActions: ["ACCEPT_QUOTE", "CANCEL"],
   quote: {
-    ...quoteInput, id: quoteId, version: 4, status: "OFFERED", issuedAt: "2026-12-01T02:00:00Z", depositMinor: 2, balanceMinor: 1,
+    ...quoteWithoutLines, id: quoteId, version: 4, status: "OFFERED", issuedAt: "2026-12-01T02:00:00Z", depositMinor: 2, balanceMinor: 1,
     equipment: [{ ...quoteInput.equipment[0], id: equipmentId }], termsText: "Synthetic terms",
     balanceGraceEndsAt: "2026-12-18T02:00:00Z",
   },

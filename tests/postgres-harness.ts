@@ -7,8 +7,8 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import { Client, Pool, type ClientConfig } from "pg";
-import { migrate } from "../src/server/db/migrate";
-import type { OtpDelivery } from "../src/server/identity/service";
+import { migrate } from "../frontend/server/db/migrate";
+import type { OtpDelivery } from "../frontend/server/identity/service";
 
 const runFile = promisify(execFile);
 const loopback = "127.0.0.1";
@@ -143,7 +143,8 @@ export async function startTestPostgres({ applyMigrations = true } = {}) {
   if (await realpath(cache) !== cache) throw new Error("PostgreSQL tests require a project-local .cache");
 
   const require = createRequire(import.meta.url);
-  const distribution = require.resolve(`@embedded-postgres/${process.platform}-${process.arch}`);
+  const platform = process.platform === "win32" ? "windows" : process.platform;
+  const distribution = require.resolve(`@embedded-postgres/${platform}-${process.arch}`);
   const binaries = join(dirname(distribution), "..", "native", "bin");
   const directory = await mkdtemp(join(cache, "sweetcommerce-pg-"));
   const data = join(directory, "data");
@@ -169,13 +170,14 @@ export async function startTestPostgres({ applyMigrations = true } = {}) {
   try {
     // Use the installed distribution directly so initdb keeps its password file inside .cache.
     await writeFile(passwordFile, adminPassword + "\n", { flag: "wx", mode: 0o600 });
-    await runFile(join(binaries, "initdb"), [
+    const executableSuffix = process.platform === "win32" ? ".exe" : "";
+    await runFile(join(binaries, "initdb" + executableSuffix), [
       "--pgdata", data, "--username", "postgres", "--pwfile", passwordFile,
       "--auth=scram-sha-256", "--encoding=UTF8", "--locale=C",
     ], { timeout: 20_000 });
     await unlink(passwordFile);
     const port = await freeLoopbackPort();
-    cluster = launchPostgres(join(binaries, "postgres"), data, port);
+    cluster = launchPostgres(join(binaries, "postgres" + executableSuffix), data, port);
     await cluster.ready;
 
     const config = {

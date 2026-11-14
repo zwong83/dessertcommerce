@@ -5,9 +5,10 @@ from secrets import token_bytes
 from uuid import uuid4
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+from psycopg.errors import UniqueViolation
 
 from ..db import one
-from .domain import OTP_ATTEMPTS
+from .domain import OTP_ATTEMPTS, PasswordAction, Role
 
 
 def base64url(value: bytes) -> str:
@@ -42,6 +43,9 @@ class IdentityCrypto:
     def csrf_token(self, session: str) -> str:
         return base64url(self._sign("csrf", session))
 
+    def username_fingerprint(self, username: str) -> bytes:
+        return self._sign("password-attempt", username)
+
     def otp_verifier(self, challenge_id: str, code: str) -> bytes:
         return self._sign("otp", challenge_id + "\0" + code)
 
@@ -60,7 +64,7 @@ class IdentityCrypto:
 
 
 def lock_send_budget(conn, role):
-    conn.execute("SELECT pg_advisory_xact_lock(%s, %s)", (41021, 1 if role == "ADMIN" else 2))
+    conn.execute("SELECT pg_advisory_xact_lock(%s, %s)", (41021, 1 if role == Role.ADMIN else 2))
 
 
 def send_counts(conn, fingerprint, role, after):
@@ -126,6 +130,10 @@ def resolve_customer(conn, phone):
            ON CONFLICT (phone_e164) WHERE role = 'CUSTOMER' DO NOTHING""",
         (uuid4(), phone),
     )
+    return find_customer(conn, phone)
+
+
+def find_customer(conn, phone):
     account = one(
         conn,
         "SELECT id FROM account WHERE role = 'CUSTOMER' AND status = 'ACTIVE' AND phone_e164 = %s",
@@ -134,8 +142,135 @@ def resolve_customer(conn, phone):
     return account["id"] if account else None
 
 
+def create_password_customer(conn):
+    account_id = uuid4()
+    conn.execute("INSERT INTO account (id, role) VALUES (%s, 'CUSTOMER')", (account_id,))
+    return account_id
+
+
+def insert_customer_profile(conn, account_id, registration, password_hash, *, contact_phone=None):
+    try:
+        with conn.transaction():
+            return one(conn, """
+                INSERT INTO customer_profile (account_id, display_name, notification_email, username, password_hash, contact_phone)
+                VALUES (%s,%s,%s,%s,%s,%s)
+                ON CONFLICT (account_id) DO UPDATE SET display_name = EXCLUDED.display_name,
+                    notification_email = EXCLUDED.notification_email, username = EXCLUDED.username,
+                    password_hash = EXCLUDED.password_hash, contact_phone = EXCLUDED.contact_phone
+                WHERE customer_profile.password_hash IS NULL RETURNING account_id
+            """, (account_id, registration.name, registration.email, registration.username, password_hash, contact_phone)) is not None
+    except UniqueViolation:
+        return False
+
+
+def find_password_customer(conn, username):
+    return one(conn, """
+        SELECT a.id, p.password_hash FROM customer_profile p JOIN account a ON a.id = p.account_id
+        WHERE p.username = %s AND a.role = 'CUSTOMER' AND a.status = 'ACTIVE'
+    """, (username,))
+
+
+def insert_merchant_profile(conn, account_id, registration, password_hash):
+    return one(conn, """
+        INSERT INTO merchant_profile (account_id, display_name, email, username, password_hash)
+        VALUES (%s,%s,%s,%s,%s) ON CONFLICT DO NOTHING RETURNING account_id
+    """, (account_id, registration.name, registration.email, registration.username, password_hash)) is not None
+
+
+def find_password_merchant(conn, username):
+    return one(conn, """
+        SELECT a.id, a.credential_epoch, p.password_hash FROM merchant_profile p JOIN account a ON a.id = p.account_id
+        WHERE p.username = %s AND a.role = 'ADMIN' AND a.status = 'ACTIVE'
+    """, (username,))
+
+
+def find_customer_display_name(conn, account_id):
+    profile = one(conn, "SELECT display_name FROM customer_profile WHERE account_id = %s", (account_id,))
+    return profile["display_name"] if profile else None
+
+
+def read_customer_profile(conn, account_id):
+    return one(conn, """
+        SELECT p.display_name, p.username, p.username_changed_at, p.avatar_version,
+               COALESCE(p.contact_phone, a.phone_e164) AS phone, p.notification_email AS email
+        FROM account a LEFT JOIN customer_profile p ON p.account_id = a.id
+        WHERE a.id = %s AND a.role = 'CUSTOMER'
+    """, (account_id,))
+
+
+def ensure_customer_profile(conn, account_id, display_name):
+    conn.execute("""
+        INSERT INTO customer_profile (account_id, display_name) VALUES (%s, %s)
+        ON CONFLICT (account_id) DO NOTHING
+    """, (account_id, display_name))
+
+
+def lock_customer_credentials(conn, account_id):
+    return one(conn, """
+        SELECT username, password_hash, username_changed_at FROM customer_profile
+        WHERE account_id = %s FOR UPDATE
+    """, (account_id,))
+
+
+def update_customer_profile(conn, account_id, edit, username, changed_at):
+    conn.execute("""
+        UPDATE customer_profile SET display_name = %s, username = %s, username_changed_at = %s,
+            contact_phone = COALESCE(%s, contact_phone),
+            notification_email = CASE WHEN %s THEN %s::text ELSE notification_email END,
+            avatar_webp = CASE WHEN %s THEN %s::bytea ELSE avatar_webp END,
+            avatar_version = CASE WHEN %s THEN %s::uuid ELSE avatar_version END
+        WHERE account_id = %s
+    """, (edit.display_name, username, changed_at, edit.contact_phone, edit.update_email, edit.email,
+          edit.replace_avatar, edit.avatar,
+          edit.replace_avatar, uuid4() if edit.avatar is not None else None, account_id))
+
+
+def read_customer_avatar(conn, account_id):
+    result = one(conn, "SELECT avatar_webp FROM customer_profile WHERE account_id = %s", (account_id,))
+    return result["avatar_webp"] if result else None
+
+
+def customer_password_hash(conn, account_id):
+    result = one(conn, "SELECT password_hash FROM customer_profile WHERE account_id = %s", (account_id,))
+    return result["password_hash"] if result else None
+
+
+def update_customer_password(conn, account_id, expected_hash, new_hash):
+    return one(conn, """
+        UPDATE customer_profile SET password_hash = %s
+        WHERE account_id = %s AND password_hash = %s RETURNING account_id
+    """, (new_hash, account_id, expected_hash)) is not None
+
+
+_PASSWORD_BUDGET_LOCKS = {
+    PasswordAction.SIGN_IN: 3, PasswordAction.SIGN_UP: 4, PasswordAction.CHANGE: 5, PasswordAction.MERCHANT_SIGN_IN: 6,
+}
+
+
+def lock_password_budget(conn, operation: PasswordAction):
+    conn.execute("SELECT pg_advisory_xact_lock(%s,%s)", (41021, _PASSWORD_BUDGET_LOCKS[operation]))
+
+
+def password_counts(conn, operation, bucket, fingerprint):
+    return one(conn, """
+        SELECT COALESCE(sum(attempts), 0) AS total,
+               COALESCE(sum(attempts) FILTER (WHERE username_fingerprint = %s), 0) AS for_username
+        FROM customer_password_attempt WHERE operation = %s AND bucket = %s
+    """, (fingerprint, operation, bucket))
+
+
+def record_password_attempt(conn, operation, bucket, fingerprint):
+    conn.execute("DELETE FROM customer_password_attempt WHERE operation = %s AND bucket < %s", (operation, bucket))
+    conn.execute("""
+        INSERT INTO customer_password_attempt (operation, bucket, username_fingerprint, attempts) VALUES (%s,%s,%s,1)
+        ON CONFLICT (operation, bucket, username_fingerprint)
+        DO UPDATE SET attempts = customer_password_attempt.attempts + 1
+    """, (operation, bucket, fingerprint))
+
+
 def recover_admin(conn, account_id, now):
     conn.execute("UPDATE account SET credential_epoch = credential_epoch + 1 WHERE id = %s", (account_id,))
+    conn.execute("DELETE FROM merchant_profile WHERE account_id = %s", (account_id,))
     conn.execute(
         "UPDATE session SET revoked_at = %s WHERE account_id = %s AND revoked_at IS NULL",
         (now, account_id),
@@ -173,3 +308,10 @@ def revoke_session(conn, token, now):
         "UPDATE session SET revoked_at = %s WHERE token_hash = %s AND revoked_at IS NULL",
         (now, token_hash(token)),
     )
+
+
+def revoke_other_sessions(conn, account_id, token, now):
+    conn.execute("""
+        UPDATE session SET revoked_at = %s
+        WHERE account_id = %s AND revoked_at IS NULL AND token_hash <> %s
+    """, (now, account_id, token_hash(token)))

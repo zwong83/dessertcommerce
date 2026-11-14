@@ -2,13 +2,13 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { GalleryEditor } from "../src/ui/merchant-catalog-gallery";
-import { ProductIdentityFields } from "../src/ui/merchant-catalog";
+import { GalleryEditor } from "../frontend/ui/merchant-catalog-gallery";
+import { ProductIdentityFields } from "../frontend/ui/merchant-catalog";
 import {
   CatalogueError, addStagedPhoto, createProduct, movePhoto, photoIssue, prepareProductUpdate,
   priceInSen, publicationActions, readProducts, refreshMerchantSession, stagePhoto, updateProduct,
   type Product,
-} from "../src/ui/merchant-catalog-model";
+} from "../frontend/ui/merchant-catalog-model";
 
 const product: Product = {
   id: "8e109917-7b8e-4ba1-8765-cbfae1af7192", name: "Lemon tart",

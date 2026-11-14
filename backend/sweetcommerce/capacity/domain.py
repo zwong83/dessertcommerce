@@ -1,10 +1,11 @@
+import re
 from collections.abc import Mapping, Sequence
 from datetime import UTC, date, datetime
-import re
+from enum import StrEnum
 from typing import Protocol
 from uuid import UUID
 
-from sweetcommerce.problems import Problem, validation
+from sweetcommerce.problems import AccessDenied, AuthenticationRequired, validation
 
 _EPOCH = date(1970, 1, 1).toordinal()
 _DAY = 86_400
@@ -18,7 +19,17 @@ _TIMESTAMP = re.compile(
 _UUID = re.compile(r"[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}", re.IGNORECASE)
 
 Timestamp = str | datetime
-FULFILMENT_MODES = ("PICKUP", "MERCHANT_LALAMOVE", "CUSTOMER_LALAMOVE")
+SAME_DAY_ORDER_CUTOFF = "18:00"
+SAME_DAY_LATEST_HANDOFF = "21:00"
+
+
+class FulfilmentMode(StrEnum):
+    PICKUP = "PICKUP"
+    MERCHANT_LALAMOVE = "MERCHANT_LALAMOVE"
+    CUSTOMER_LALAMOVE = "CUSTOMER_LALAMOVE"
+
+
+FULFILMENT_MODES = tuple(FulfilmentMode)
 
 
 class CapacityActor(Protocol):
@@ -35,9 +46,9 @@ def uuid(value: str | UUID) -> str:
 
 def require_role(actor: CapacityActor | None, role: str) -> str:
     if actor is None:
-        raise Problem("UNAUTHENTICATED", 401, "Sign in to continue.")
+        raise AuthenticationRequired("Sign in to continue.")
     if actor.role != role:
-        raise Problem("FORBIDDEN", 403, "This action requires a different account role.")
+        raise AccessDenied("This action requires a different account role.")
     return uuid(actor.account_id)
 
 
@@ -102,12 +113,12 @@ def _handoff_window(policy: Mapping, now: tuple[int, str], day: str, prep_minute
     same_day = day == today
     if weekday not in policy["openWeekdays"] or day < today:
         return None
-    if same_day and now > _local_time(day, "18:00"):
+    if same_day and now > _local_time(day, SAME_DAY_ORDER_CUTOFF):
         return None
 
     opens = _local_time(day, policy["opensAt"])
     ready = (now[0] + prep_minutes * 60, now[1])
-    closes = min(policy["closesAt"], "21:00") if same_day else policy["closesAt"]
+    closes = min(policy["closesAt"], SAME_DAY_LATEST_HANDOFF) if same_day else policy["closesAt"]
     return max(opens, ready), _local_time(day, closes)
 
 
