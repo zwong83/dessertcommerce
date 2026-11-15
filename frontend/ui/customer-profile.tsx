@@ -6,6 +6,7 @@ import type { components } from "@/contracts/customer-auth-v1";
 import { authRequest } from "./auth-api";
 import { meetsPasswordRules, PasswordChecklist, usernamePattern } from "./customer-password-policy";
 import { ErrorMessage } from "./error-message";
+import { FileUpload } from "./file-upload";
 import { Icon } from "./icons";
 import { PasswordField } from "./password-field";
 
@@ -108,7 +109,6 @@ function EditCustomerProfile({ profile, csrfToken, onSaved, onCancel }: {
   const [removePhoto, setRemovePhoto] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const fileInput = useRef<HTMLInputElement>(null);
   const usernameLocked = profile.username === null || profile.usernameChangeAvailableAt !== null;
   const preview = photo?.preview ?? (removePhoto ? undefined : avatarUrl(profile.avatarVersion));
 
@@ -118,7 +118,6 @@ function EditCustomerProfile({ profile, csrfToken, onSaved, onCancel }: {
 
   function choosePhoto(file: File) {
     if (!avatarTypes.includes(file.type) || file.size > maxAvatarBytes) {
-      if (fileInput.current) fileInput.current.value = "";
       setError("Choose a JPEG, PNG or WebP image up to 2 MB.");
       return;
     }
@@ -157,15 +156,13 @@ function EditCustomerProfile({ profile, csrfToken, onSaved, onCancel }: {
     <div className="account-photo-controls">
       <ProfileAvatar source={preview} name={name} />
       <div className="account-file">
-        <label htmlFor="profile-photo">Profile picture</label>
-        <input id="profile-photo" ref={fileInput} type="file" accept={avatarTypes.join(",")} disabled={busy}
-          aria-describedby="profile-photo-help"
-          onChange={event => { const file = event.target.files?.[0]; if (file) choosePhoto(file); }} />
-        <small id="profile-photo-help">JPEG, PNG or WebP, up to 2 MB.</small>
+        <FileUpload id="profile-photo" label="Profile picture" accept={avatarTypes} maxBytes={maxAvatarBytes}
+          help="JPEG, PNG or WebP · Up to 2 MiB" hint="Ready to save with your profile."
+          file={photo?.file ?? null} disabled={busy} busy={busy}
+          onFileChange={file => { if (file) choosePhoto(file); else setPhoto(null); }} />
         {preview && <button type="button" className="button-quiet" disabled={busy} onClick={() => {
           setPhoto(null);
           setRemovePhoto(true);
-          if (fileInput.current) fileInput.current.value = "";
         }}>Remove picture</button>}
       </div>
     </div>

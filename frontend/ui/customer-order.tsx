@@ -1,8 +1,10 @@
 "use client";
 
+import { FileUpload } from "./file-upload";
+
 import { useEffect, useState } from "react";
 import { ChargeDetails, Time } from "./order-details";
-import { CommandFeedback, CommandForm, Confirm, Field, useStandardCommands, type StandardCommands } from "./standard-forms";
+import { CommandFeedback, CommandForm, Confirm, useStandardCommands, type StandardCommands } from "./standard-forms";
 import { canAcceptFee, cancellationInput, money, proofIssue, proofTypes, type Charge, type Order, type Session, type TransferAnswer } from "./standard-model";
 
 function FeeOffer({ order, commands }: { order: Order; commands: StandardCommands }) {
@@ -90,7 +92,9 @@ function CustomerCharge({ charge, adjustment, commands }: {
                   : "Proof was received for review. The merchant still needs to verify the funds.";
               });
             }}>
-            <Field name="proof" type="file" required accept={proofTypes.join(",")}>Transfer evidence (JPEG, PNG or PDF, up to 5 MiB)</Field>
+            <FileUpload name="proof" label="Transfer evidence" required accept={proofTypes} maxBytes={5 * 1024 * 1024}
+              help="JPEG, PNG or PDF · Up to 5 MiB" hint="Ready to submit. Choose Upload proof to send it for review."
+              disabled={commands.locked} busy={commands.busy} />
           </CommandForm>
         </>
       )}

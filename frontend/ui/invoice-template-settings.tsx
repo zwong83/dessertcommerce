@@ -1,7 +1,7 @@
 import { Select } from "@/ui/select";
 import { useRef, type ReactNode } from "react";
-import { Icon } from "./icons";
-import { invoiceLogoFormats, type InvoiceSection, type InvoiceTemplate } from "./invoice-model";
+import { FileUpload } from "./file-upload";
+import { invoiceLogoFormats, invoiceLogoMaxBytes, type InvoiceSection, type InvoiceTemplate } from "./invoice-model";
 
 export type UpdateSection = <S extends InvoiceSection>(section: S, patch: Partial<InvoiceTemplate[S]>) => void;
 
@@ -26,7 +26,6 @@ type LogoControl = {
 function LogoSetting({ logo, reading, error, replace, restore }: LogoControl & {
   logo: InvoiceTemplate["header"]["logo"];
 }) {
-  const picker = useRef<HTMLInputElement>(null);
   const replaceButton = useRef<HTMLButtonElement>(null);
   const logoUrl = logo ? `data:${logo.mediaType};base64,${logo.data}` : "/gather-dessert-invoice-logo.webp";
 
@@ -42,24 +41,15 @@ function LogoSetting({ logo, reading, error, replace, restore }: LogoControl & {
         </p>
       </div>
     </div>
-    <div className="invoice-logo-actions">
-      <input ref={picker} type="file" hidden accept={invoiceLogoFormats.join(",")}
-        onChange={event => {
-          const file = event.currentTarget.files?.[0];
-          event.currentTarget.value = "";
-          if (file) replace(file);
-        }} />
-      <button ref={replaceButton} type="button" className="button-secondary"
-        aria-describedby={error ? "invoice-logo-help invoice-logo-error" : "invoice-logo-help"}
-        onClick={() => picker.current?.click()}>
-        <Icon name="upload" size={17} /> Replace logo
-      </button>
-      {logo && <button className="button-quiet" type="button" onClick={() => {
-        replaceButton.current?.focus();
-        restore();
-      }}>Restore default</button>}
-    </div>
-    <p className="invoice-logo-help" id="invoice-logo-help">PNG, JPEG or WebP, up to 2 MiB.</p>
+    <FileUpload resetKey={logo} id="invoice-logo-upload" label="Replace invoice logo"
+      buttonRef={replaceButton} accept={invoiceLogoFormats} maxBytes={invoiceLogoMaxBytes}
+      help="PNG, JPEG or WebP · Up to 2 MiB" hint="Updating your logo preview…" busy={reading}
+      onFileChange={file => { if (file) replace(file); }} />
+    {logo && <div className="invoice-logo-actions"><button className="button-quiet" type="button" disabled={reading} onClick={() => {
+      restore();
+      requestAnimationFrame(() => replaceButton.current?.focus());
+    }}>Restore default</button></div>}
+    <p className="invoice-logo-help" id="invoice-logo-help">Transparent images work best. Save your draft to keep changes.</p>
     {error && <p className="invoice-logo-error" id="invoice-logo-error">{error}</p>}
   </section>;
 }
