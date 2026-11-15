@@ -5,10 +5,8 @@ import { useEffect, useState } from "react";
 import { ErrorMessage } from "./error-message";
 import { Icon } from "./icons";
 import { TemplateSectionSettings, type UpdateSection } from "./invoice-template-settings";
-import { invoiceKinds, moveSection, sectionNames, templatePath, type InvoiceKind, type InvoiceLogo, type InvoiceSection, type TemplateState } from "./invoice-model";
+import { invoiceKinds, invoiceLogoFormats, invoiceLogoMaxBytes, moveSection, sectionNames, templatePath, type InvoiceKind, type InvoiceSection, type TemplateState } from "./invoice-model";
 import { prepareMutation, previewInvoicePdf, sendStandard } from "./standard-api";
-
-const logoFormats = ["image/png", "image/jpeg", "image/webp"];
 
 export function InvoiceTemplateEditor({ initial, csrfToken }: { initial: TemplateState; csrfToken: string }) {
   const [saved, setSaved] = useState(initial);
@@ -24,6 +22,7 @@ export function InvoiceTemplateEditor({ initial, csrfToken }: { initial: Templat
   const [previewRetry, setPreviewRetry] = useState(0);
   const [action, setAction] = useState<"draft" | "publish" | null>(null);
   const [readingLogo, setReadingLogo] = useState(false);
+  const [logoError, setLogoError] = useState<{ message: string; revision: number } | null>(null);
   const [error, setError] = useState("");
   const [status, setStatus] = useState("");
   const currentIndex = template.order.indexOf(selected);
@@ -60,12 +59,17 @@ export function InvoiceTemplateEditor({ initial, csrfToken }: { initial: Templat
     setStatus(sectionNames[section] + " moved to position " + (destination + 1) + ".");
   }
 
+  function reportLogoError(message: string) {
+    setLogoError(previous => ({ message, revision: (previous?.revision ?? 0) + 1 }));
+  }
+
   async function replaceLogo(file: File) {
-    setError("");
-    if (!logoFormats.includes(file.type) || file.size > 2 * 1024 * 1024) {
-      setError("Choose a JPEG, PNG or WebP logo up to 2 MiB.");
+    const mediaType = invoiceLogoFormats.find(format => format === file.type);
+    if (!mediaType || file.size === 0 || file.size > invoiceLogoMaxBytes) {
+      reportLogoError("Choose a PNG, JPEG or WebP image up to 2 MiB.");
       return;
     }
+    setLogoError(null);
     try {
       setReadingLogo(true);
       const data = await new Promise<string>((resolve, reject) => {
@@ -74,12 +78,19 @@ export function InvoiceTemplateEditor({ initial, csrfToken }: { initial: Templat
         reader.onerror = () => reject(new Error("Could not read the logo."));
         reader.readAsDataURL(file);
       });
-      update("header", { logo: { mediaType: file.type as InvoiceLogo["mediaType"], data } });
+      update("header", { logo: { mediaType, data } });
+      setStatus("Logo updated in the draft.");
     } catch {
-      setError("Could not read the logo. Choose the file again.");
+      reportLogoError("Could not read the logo. Choose the file again.");
     } finally {
       setReadingLogo(false);
     }
+  }
+
+  function restoreDefaultLogo() {
+    setLogoError(null);
+    update("header", { logo: null });
+    setStatus("Default logo restored in the draft.");
   }
 
   async function save(mode: "draft" | "publish") {
@@ -116,6 +127,7 @@ export function InvoiceTemplateEditor({ initial, csrfToken }: { initial: Templat
       </div>
     </header>
     {error && <ErrorMessage key={error}>{error}</ErrorMessage>}
+    {logoError && <ErrorMessage key={logoError.revision}>{logoError.message}</ErrorMessage>}
     <p className="invoice-editor-status" role="status">{status}</p>
     <div className="invoice-editor-layout">
       <section className="invoice-editor-controls" aria-labelledby="invoice-sections">
@@ -152,7 +164,12 @@ export function InvoiceTemplateEditor({ initial, csrfToken }: { initial: Templat
         </ul>
         <fieldset className="invoice-editor-settings" id="invoice-section-settings" disabled={!!action || readingLogo}>
           <legend>{sectionNames[selected]} settings</legend>
-          <TemplateSectionSettings section={selected} template={template} update={update} onLogo={file => void replaceLogo(file)} />
+          <TemplateSectionSettings section={selected} template={template} update={update} logoControl={{
+            reading: readingLogo,
+            error: logoError?.message ?? "",
+            replace: file => void replaceLogo(file),
+            restore: restoreDefaultLogo,
+          }} />
           <div className="invoice-editor-actions invoice-reorder">
             <button type="button" className="button-secondary" disabled={currentIndex === 0} onClick={() => reorder(selected, currentIndex - 1)}>
               <Icon name="up" size={17} /> Move up
