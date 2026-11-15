@@ -7,11 +7,15 @@ import { MerchantProductCard } from "./merchant-catalog-card";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
 import {
-  CatalogueError, cataloguePath, createProduct, productPagePath, readProducts, refreshMerchantSession, statusNames,
-  type MerchantSession, type ProductPage, type ProductStatus,
+  CatalogueError, cataloguePath, createProduct, productPagePath, refreshMerchantSession, statusNames,
+  type MerchantSession, type Product,
 } from "./merchant-catalog-model";
+
+import {
+  cataloguePageSize, defaultCatalogueFilters, filterCatalogue, readCatalogue, type CatalogueFilters,
+} from "./merchant-catalog-filters";
 
 type Command = { label: string; run: (csrfToken: string) => Promise<void>; canSetAside?: boolean };
 
@@ -158,102 +162,158 @@ export function MerchantProductDraft(session: MerchantSession) {
 }
 
 export function MerchantCatalogue({ csrfToken }: { csrfToken: string }) {
-  const [filter, setFilter] = useState<ProductStatus | "">("");
-  const [cursors, setCursors] = useState<(string | null)[]>([null]);
+  const [filters, setFilters] = useState<CatalogueFilters>(defaultCatalogueFilters);
+  const [page, setPage] = useState(1);
   const [refresh, setRefresh] = useState(0);
-  const [result, setResult] = useState<{ page: ProductPage; filter: ProductStatus | ""; number: number } | null>(null);
+  const [products, setProducts] = useState<Product[] | null>(null);
   const [error, setError] = useState<CatalogueError | null>(null);
   const [busy, setBusy] = useState(true);
-  const cursor = cursors[cursors.length - 1];
-  const pageNumber = cursors.length;
+  const searchInput = useRef<HTMLInputElement>(null);
+  const resultsHeading = useRef<HTMLHeadingElement>(null);
 
   useEffect(() => {
     const controller = new AbortController();
-    void readProducts(filter, cursor, controller.signal).then(page => {
-      if (!controller.signal.aborted) setResult({ page, filter, number: pageNumber });
-    }).catch((failure: CatalogueError) => {
-      if (!controller.signal.aborted) {
-        if (failure.needsSignIn) setResult(null);
-        setError(failure);
-      }
+    setBusy(true);
+    setError(null);
+    void readCatalogue(controller.signal).then(items => {
+      if (!controller.signal.aborted) setProducts(items);
+    }).catch((failure: unknown) => {
+      if (controller.signal.aborted) return;
+      const issue = failure instanceof CatalogueError ? failure
+        : new CatalogueError(null, 0, "The catalogue could not be loaded. Please try again.");
+      if (issue.needsSignIn) setProducts(null);
+      setError(issue);
     }).finally(() => {
       if (!controller.signal.aborted) setBusy(false);
     });
     return () => controller.abort();
-  }, [cursor, filter, pageNumber, refresh, csrfToken]);
+  }, [refresh, csrfToken]);
 
+  const categories = useMemo(() => [...new Set((products ?? []).flatMap(product =>
+    product.category ? [product.category] : []))].sort((a, b) => a.localeCompare(b)), [products]);
+  const matches = useMemo(() => filterCatalogue(products ?? [], filters), [products, filters]);
+  const pages = Math.max(1, Math.ceil(matches.length / cataloguePageSize));
+  const currentPage = Math.min(page, pages);
+  const start = (currentPage - 1) * cataloguePageSize;
+  const visible = matches.slice(start, start + cataloguePageSize);
+  const activeFilters = [
+    ...(filters.search.trim() ? [{ key: "search" as const, label: `Search: ${filters.search.trim()}` }] : []),
+    ...(filters.category ? [{ key: "category" as const, label: filters.category }] : []),
+    ...(filters.status ? [{ key: "status" as const, label: statusNames[filters.status] }] : []),
+    ...(filters.photos ? [{ key: "photos" as const, label: filters.photos === "with" ? "With photos" : "Missing photos" }] : []),
+  ];
+
+  function changeFilter<K extends keyof CatalogueFilters>(key: K, value: CatalogueFilters[K]) {
+    setFilters(previous => ({ ...previous, [key]: value }));
+    setPage(1);
+  }
+  function clearFilters() {
+    setFilters(previous => ({ ...defaultCatalogueFilters, sort: previous.sort }));
+    setPage(1);
+    searchInput.current?.focus();
+  }
   function reload() {
     setError(null);
     setBusy(true);
     setRefresh(value => value + 1);
   }
+  function changePage(next: number) {
+    setPage(next);
+    resultsHeading.current?.focus();
+  }
 
   return (
     <>
       <section className="surface catalogue-filter-panel" aria-labelledby="catalogue-filters-title">
-        <div className="catalogue-section-heading"><div><h2 id="catalogue-filters-title">Find your products</h2><p>Choose a publication status to manage your menu.</p></div>
-          <button className="button-secondary" type="button" disabled={busy} onClick={reload}>Refresh products</button>
+        <div className="catalogue-section-heading"><div><h2 id="catalogue-filters-title">Find your products</h2>
+          <p>Search your whole menu, then narrow it down.</p></div>
+          <button className="button-secondary" type="button" disabled={busy} onClick={reload}>{busy ? "Refreshing…" : "Refresh products"}</button>
         </div>
-        <div className="catalogue-filter-controls"><div>
-        <label htmlFor="catalogue-status">Publication status</label>
-        <Select id="catalogue-status" value={filter} onChange={event => {
-          setFilter(event.target.value as ProductStatus | "");
-          setCursors([null]);
-          reload();
-        }}>
-          <option value="">All statuses</option>
-          {Object.entries(statusNames).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-        </Select>
-        </div>
-        {filter && <button className="button-quiet" type="button" onClick={() => { setFilter(""); setCursors([null]); reload(); }}>Clear filter</button>}
-        </div>
-        <p className="catalogue-filter-help">Drafts stay private until you list them. Open a product to manage photos, variants and pricing.</p>
-      </section>
-      <p className={"catalogue-load-status" + (busy ? "" : " visually-hidden")} role="status">
-        {busy ? "Loading products…" : result && !error ? `Page ${result.number}. ${result.page.items.length} products.` : ""}
-      </p>
-      {error && (
-        <>
-          <CatalogueProblem error={error} />
-          <button className="button-secondary" type="button" disabled={busy} onClick={reload}>Retry loading products</button>
-        </>
-      )}
-      {result && !error?.needsSignIn && (
-        <section className="catalogue-results" aria-label="Catalogue results" aria-busy={busy}>
-          {(busy || error) && <p className="catalogue-stale-note">Last loaded results · {result.filter ? statusNames[result.filter] : "All statuses"} · Page {result.number}</p>}
-          <dl className="catalogue-page-summary" aria-label="Current page summary">
-            <div><dt>Products on this page</dt><dd>{result.page.items.length}</dd></div>
-            <div><dt>Listed on this page</dt><dd>{result.page.items.filter(product => product.status === "LISTED").length}</dd></div>
-            <div><dt>Drafts on this page</dt><dd>{result.page.items.filter(product => product.status === "DRAFT").length}</dd></div>
-          </dl>
-          <div className="catalogue-section-heading catalogue-results-heading"><div><h2>Your products</h2><p>{result.filter ? statusNames[result.filter] : "All publication statuses"} · Page {result.number}</p></div>
-            <span className="capacity-status">{result.page.items.length} {result.page.items.length === 1 ? "product" : "products"}</span>
+        <div className="catalogue-search-row">
+          <div className="catalogue-search-field">
+            <label htmlFor="catalogue-search">Search products</label>
+            <div className="catalogue-search-input"><Icon name="search" size={20} />
+              <input ref={searchInput} id="catalogue-search" type="search" value={filters.search}
+                placeholder="Try tart, Christmas or chocolate…" maxLength={120}
+                aria-describedby="catalogue-search-help" aria-controls="catalogue-product-results"
+                onChange={event => changeFilter("search", event.target.value)}
+                onKeyDown={event => { if (event.key === "Escape") changeFilter("search", ""); }} />
+              {filters.search && <button type="button" className="catalogue-search-clear" aria-label="Clear search"
+                onClick={() => { changeFilter("search", ""); searchInput.current?.focus(); }}><Icon name="close" size={18} /></button>}
+            </div>
+            <p id="catalogue-search-help" className="catalogue-filter-help">Find a product by name, category, flavour or variant.</p>
           </div>
-          {result.page.items.length === 0 ? <div className="surface catalogue-empty"><span className="catalogue-empty-icon"><Icon name="cake" size={32} /></span>
-            <h3>{result.filter ? "No " + statusNames[result.filter].toLowerCase() + " products" : "Your menu starts here"}</h3>
-            <p>{result.filter ? "Choose another publication status to find your products." : "Create your first product draft, then add photos, variants and prices before listing it."}</p>
-            {result.filter ? <button className="button-secondary" type="button" disabled={busy} onClick={() => { setFilter(""); setCursors([null]); reload(); }}>Show all products</button>
+          <div className="catalogue-sort-field"><label htmlFor="catalogue-sort">Sort by</label>
+            <Select id="catalogue-sort" value={filters.sort} onChange={event => changeFilter("sort", event.target.value as CatalogueFilters["sort"])}>
+              <option value="name">Name: A–Z</option><option value="name-desc">Name: Z–A</option>
+              <option value="price-low">Starting price: low to high</option><option value="price-high">Starting price: high to low</option>
+            </Select>
+          </div>
+        </div>
+        <div className="catalogue-filter-controls">
+          <div><label htmlFor="catalogue-category">Category</label>
+            <Select id="catalogue-category" value={filters.category} disabled={!products} onChange={event => changeFilter("category", event.target.value)}>
+              <option value="">All categories</option>
+              {categories.map(category => <option key={category} value={category}>{category}</option>)}
+            </Select>
+          </div>
+          <div><label htmlFor="catalogue-status">Publication status</label>
+            <Select id="catalogue-status" value={filters.status} onChange={event => changeFilter("status", event.target.value as CatalogueFilters["status"])}>
+              <option value="">All statuses</option>
+              {Object.entries(statusNames).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+            </Select>
+          </div>
+          <div><label htmlFor="catalogue-photos">Product photos</label>
+            <Select id="catalogue-photos" value={filters.photos} onChange={event => changeFilter("photos", event.target.value as CatalogueFilters["photos"])}>
+              <option value="">All products</option><option value="with">With photos</option><option value="without">Missing photos</option>
+            </Select>
+          </div>
+        </div>
+        {activeFilters.length > 0 && <div className="catalogue-active-filters" aria-label="Active filters">
+          <span>Filtered by</span>
+          {activeFilters.map(({ key, label }) => <button type="button" className="catalogue-filter-chip" key={key}
+            aria-label={`Remove ${label} filter`} onClick={() => { changeFilter(key, ""); searchInput.current?.focus(); }}>
+            <span>{label}</span><Icon name="close" size={14} /></button>)}
+          <button className="button-quiet" type="button" onClick={clearFilters}>Clear all</button>
+        </div>}
+      </section>
+      <p className={"catalogue-load-status" + (busy ? "" : " visually-hidden")} role="status" aria-atomic="true">
+        {busy ? "Loading your full catalogue…" : products && !error
+          ? `${matches.length} ${matches.length === 1 ? "product" : "products"} found. ${matches.length ? `Showing ${start + 1}–${start + visible.length}. Page ${currentPage} of ${pages}.` : "Try another search or clear your filters."}` : ""}
+      </p>
+      {error && <><CatalogueProblem error={error} />
+        <button className="button-secondary" type="button" disabled={busy} onClick={reload}>Retry loading products</button></>}
+      {products && !error?.needsSignIn && (
+        <section id="catalogue-product-results" className="catalogue-results" aria-label="Catalogue results" aria-busy={busy}>
+          {(busy || error) && <p className="catalogue-stale-note">Showing the last loaded catalogue. {error ? "Refresh to get the latest products." : "Updating products…"}</p>}
+          <dl className="catalogue-page-summary" aria-label="Catalogue summary">
+            <div><dt>Total products</dt><dd>{products.length}</dd></div>
+            <div><dt>Matching products</dt><dd>{matches.length}</dd></div>
+            <div><dt>Missing photos in results</dt><dd>{matches.filter(product => !product.imageRefs.length).length}</dd></div>
+          </dl>
+          <div className="catalogue-section-heading catalogue-results-heading"><div>
+            <h2 ref={resultsHeading} tabIndex={-1}>Your products</h2>
+            <p>{matches.length ? `Showing ${start + 1}–${start + visible.length} of ${matches.length} products` : "No products to show"}
+              {activeFilters.length > 0 && " · Filters applied"}</p></div>
+            <span className="capacity-status">{matches.length} {matches.length === 1 ? "product" : "products"}</span>
+          </div>
+          {matches.length === 0 ? <div className="surface catalogue-empty"><span className="catalogue-empty-icon"><Icon name={activeFilters.length ? "search" : "cake"} size={32} /></span>
+            <h3>{activeFilters.length ? "No products match your filters" : "Your menu starts here"}</h3>
+            <p>{activeFilters.length ? "Try a shorter search, choose another category, or clear your filters to see the whole menu."
+              : "Create your first product draft, then add photos, variants and prices before listing it."}</p>
+            {activeFilters.length ? <button className="button-secondary" type="button" onClick={clearFilters}>Clear all filters</button>
               : <Link className="button" href="/merchant/catalog/new">Add your first product <Icon name="arrow" size={16} /></Link>}
-          </div> : (
-            <ul className="catalogue-product-grid" aria-label="Products">
-              {result.page.items.map(product => <MerchantProductCard key={product.id} product={product} />)}
-            </ul>
-          )}
-          {(pageNumber > 1 || result.page.nextCursor) && (
-            <nav className="catalogue-pagination" aria-label="Catalogue pagination">
-              <button className="button-secondary" type="button" disabled={busy || pageNumber === 1} onClick={() => {
-                setCursors(cursors.slice(0, -1));
-                reload();
-              }}>Previous page</button><span>Page {result.number}</span>
-              <button type="button" disabled={busy || !!error || !result.page.nextCursor} onClick={() => {
-                setCursors([...cursors, result.page.nextCursor]);
-                reload();
-              }}>Next page</button>
-            </nav>
-          )}
+          </div> : <ul className="catalogue-product-grid" aria-label="Products">
+            {visible.map(product => <MerchantProductCard key={product.id} product={product} />)}
+          </ul>}
+          {pages > 1 && <nav className="catalogue-pagination" aria-label="Catalogue pagination">
+            <button className="button-secondary" type="button" disabled={busy || currentPage === 1} onClick={() => changePage(currentPage - 1)}>Previous page</button>
+            <span>Page {currentPage} of {pages}</span>
+            <button type="button" disabled={busy || currentPage === pages} onClick={() => changePage(currentPage + 1)}>Next page</button>
+          </nav>}
         </section>
       )}
-      {busy && !result && <div className="catalogue-product-grid catalogue-loading" aria-hidden="true">{[1, 2, 3].map(item => <div className="catalogue-loading-card" key={item}><div /><span /><span /></div>)}</div>}
+      {busy && !products && <div className="catalogue-product-grid catalogue-loading" aria-hidden="true">{[1, 2, 3].map(item => <div className="catalogue-loading-card" key={item}><div /><span /><span /></div>)}</div>}
     </>
   );
 }
