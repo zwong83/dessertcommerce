@@ -27,6 +27,7 @@ class Settings:
     otp_gateway: tuple[str, str] | None = field(default=None, repr=False)
     object_gateway: tuple[str, str] | None = field(default=None, repr=False)
     object_key: bytes | None = field(default=None, repr=False)
+    customer_phone_verification: bool = False
 
     @classmethod
     def from_environment(cls):
@@ -59,6 +60,9 @@ class Settings:
                 if url.scheme != "https" or url.hostname not in {"wa.me", "api.whatsapp.com"} or url.username:
                     raise ValueError
             otp_gateway = _gateway("OTP")
+            phone_verification = os.environ.get("SWEETCOMMERCE_CUSTOMER_PHONE_VERIFICATION", "false")
+            if phone_verification not in ("true", "false"):
+                raise ValueError
             object_gateway = _gateway("OBJECT")
             object_key = os.environ.get("SWEETCOMMERCE_OBJECT_KEY")
             if object_key is not None and not re.fullmatch(r"[A-Za-z0-9_-]{43}", object_key):
@@ -75,7 +79,7 @@ class Settings:
             dsn, identity_key, origin, otp if synthetic else None, local, pool_size, send_budget,
             os.environ.get("SWEETCOMMERCE_TERMS_VERSION"), os.environ.get("SWEETCOMMERCE_TERMS_TEXT"),
             os.environ.get("SWEETCOMMERCE_PICKUP_DISPLAY"), os.environ.get("SWEETCOMMERCE_DUITNOW_QR_URL"),
-            whatsapp_url, otp_gateway, object_gateway, storage_key,
+            whatsapp_url, otp_gateway, object_gateway, storage_key, phone_verification == "true",
         )
 
     def otp_delivery(self):

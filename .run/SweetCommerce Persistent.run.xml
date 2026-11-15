@@ -1,0 +1,11 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="SweetCommerce Persistent" type="js.build_tools.npm">
+    <package-json value="$PROJECT_DIR$/dessertcommerce/package.json" />
+    <command value="run" />
+    <scripts>
+      <script value="dev:persistent" />
+    </scripts>
+    <node-interpreter value="project" />
+    <method v="2" />
+  </configuration>
+</component>

@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import test from "node:test";
 import type { QueryResultRow } from "pg";
-import { type Queryable, withTransaction } from "../src/server/db";
-import { migrate } from "../src/server/db/migrate";
+import { type Queryable, withTransaction } from "./legacy-backend/db";
+import { migrate } from "./legacy-backend/db/migrate";
 import { startTestPostgres } from "./postgres-harness";
 
 const expectedTables = [

@@ -1,19 +1,20 @@
 import re
 from datetime import datetime
 
+from ..order.domain import OrderStatus
 from ..order.input import _handoff_instant
-from ..problems import Problem, validation
+from ..problems import InvalidTransition, Problem, VersionConflict, validation
 from ..values import field_string
 
 MAX_MINOR = 999_999_999
 MAX_VERSION = 9_007_199_254_740_991
-UNACCEPTED = frozenset(("AWAITING_FEE", "AWAITING_CASH", "PENDING_PROOF", "PAYMENT_REVIEW", "EXCEPTION"))
-TERMINAL = frozenset(("COMPLETED", "CANCELLED", "REJECTED", "EXPIRED", "NO_SHOW"))
-ACTIVE = frozenset(("ACCEPTED", "PREPARING", "READY", "HANDED_OFF", "EXCEPTION"))
+UNACCEPTED = frozenset((OrderStatus.AWAITING_FEE, OrderStatus.AWAITING_CASH, OrderStatus.PENDING_PROOF, OrderStatus.PAYMENT_REVIEW, OrderStatus.EXCEPTION))
+TERMINAL = frozenset((OrderStatus.COMPLETED, OrderStatus.CANCELLED, OrderStatus.REJECTED, OrderStatus.EXPIRED, OrderStatus.NO_SHOW))
+ACTIVE = frozenset((OrderStatus.ACCEPTED, OrderStatus.PREPARING, OrderStatus.READY, OrderStatus.HANDED_OFF, OrderStatus.EXCEPTION))
 TRANSITIONS = {
-    "START_PREPARATION": ("ACCEPTED", "PREPARING"),
-    "MARK_READY": ("PREPARING", "READY"),
-    "COMPLETE": ("HANDED_OFF", "COMPLETED"),
+    "START_PREPARATION": (OrderStatus.ACCEPTED, OrderStatus.PREPARING),
+    "MARK_READY": (OrderStatus.PREPARING, OrderStatus.READY),
+    "COMPLETE": (OrderStatus.HANDED_OFF, OrderStatus.COMPLETED),
 }
 ACTION_FIELDS = ("action", "reason", "handoffAt", "driverArrivedAt", "cancellationBasis")
 CONFIRM_FIELDS = ("feeVersion", "termsVersion")
@@ -24,7 +25,7 @@ CANCEL_FIELDS = ("noTransferSent",)
 
 
 def conflict(message: str) -> Problem:
-    return Problem("INVALID_TRANSITION", 409, message)
+    return InvalidTransition(message)
 
 
 def require(condition: bool, message: str) -> None:
@@ -34,7 +35,7 @@ def require(condition: bool, message: str) -> None:
 
 def require_version(order: dict, version: int) -> None:
     if order["version"] != version:
-        raise Problem("VERSION_CONFLICT", 409, "Refresh the order before trying again.")
+        raise VersionConflict("Refresh the order before trying again.")
 
 
 def integer(value: object, minimum: int, maximum: int, label: str) -> int:
@@ -88,7 +89,7 @@ def action_input(body: dict) -> dict:
         result["reason"] = safe_text(body.get("reason"), "the reason", 500)
     if action == "CANCEL" or "cancellationBasis" in body:
         result["cancellationBasis"] = choice(
-            body.get("cancellationBasis"), ("MERCHANT_UNABLE", "CUSTOMER_POLICY", "EXCEPTION"),
+            body.get("cancellationBasis"), ("MERCHANT_UNABLE", "CUSTOMER_POLICY", OrderStatus.EXCEPTION),
             "the cancellation basis",
         )
     if action == "RECORD_DRIVER_ARRIVAL" or "driverArrivedAt" in body:

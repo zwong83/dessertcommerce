@@ -6,22 +6,28 @@
     "node": ">=22.13.0"
   },
   "scripts": {
-    "dev": "next dev --hostname 127.0.0.1",
-    "build": "next build",
-    "start": "next start --hostname 127.0.0.1",
-    "worker": "tsx src/server/worker/main.ts",
-    "check:types": "next typegen && tsc --noEmit",
+    "dev": "next dev frontend --hostname 127.0.0.1",
+    "build": "next build frontend",
+    "start": "next start frontend --hostname 127.0.0.1",
+    "worker": "tsx scripts/worker.ts",
+    "check:types": "next typegen frontend && tsc --noEmit",
     "test": "tsx --test tests/*.test.ts",
     "check": "npm run contract:check && npm run check:types && npm test",
     "contract:generate": "node scripts/generate-contract.mjs",
     "contract:check": "node scripts/generate-contract.mjs --check",
-    "dev:isolated": "tsx scripts/dev-isolated.ts"
+    "python:sync": "tsx scripts/sync-python.ts",
+    "dev:persistent": "node --env-file=.env.persistent.local --import tsx scripts/dev-persistent.ts",
+    "merchant:setup": "node --env-file=.env.persistent.local --import tsx scripts/merchant-setup.ts"
   },
   "dependencies": {
+    "@daypicker/react": "10.0.2",
+    "@radix-ui/react-popover": "1.3.1",
+    "@radix-ui/react-select": "2.4.1",
+    "libphonenumber-js": "1.13.16",
     "next": "16.4.5",
-    "pg": "8.23.1",
     "react": "19.3.1",
     "react-dom": "19.3.1",
+    "recharts": "3.10.1",
     "sharp": "0.35.5"
   },
   "devDependencies": {
@@ -31,6 +37,7 @@
     "@types/react-dom": "19.3.0",
     "embedded-postgres": "16.15.0-beta.19",
     "openapi-typescript": "7.13.0",
+    "pg": "8.23.1",
     "tsx": "4.23.15",
     "typescript": "5.9.3"
   }

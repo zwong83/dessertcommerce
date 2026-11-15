@@ -1,3 +1,5 @@
+from ..problems import DependencyUnavailable, VersionConflict
+
 """Catalogue use cases and their transaction boundaries."""
 
 from collections.abc import Callable
@@ -7,7 +9,6 @@ from uuid import uuid4
 
 from sweetcommerce.clock import utc_now
 from sweetcommerce.db import Database, iso
-from sweetcommerce.problems import Problem
 
 from . import infrastructure as store
 from .domain import (
@@ -44,7 +45,7 @@ class CatalogueObjectStore(Protocol):
 
 
 def storage_unavailable():
-    return Problem("DEPENDENCY_UNAVAILABLE", 503, "Photo storage is temporarily unavailable.")
+    return DependencyUnavailable("Photo storage is temporarily unavailable.")
 
 
 class CatalogueService:
@@ -117,7 +118,7 @@ class CatalogueService:
         def update(conn, timestamp):
             before = store.product_state(conn, product_id, lock=True)
             if before["version"] != version:
-                raise Problem("VERSION_CONFLICT", 409, "This product changed. Refresh before saving.")
+                raise VersionConflict("This product changed. Refresh before saving.")
             status = edit["status"]
             require_transition(before["status"], status)
             category = edit.get("category", before["category"])
@@ -156,7 +157,7 @@ class CatalogueService:
         try:
             decoded = self._sanitize(original, declared_type)
         except Exception as exc:
-            raise Problem("DEPENDENCY_UNAVAILABLE", 503, "Photo processing is temporarily unavailable.") from exc
+            raise DependencyUnavailable("Photo processing is temporarily unavailable.") from exc
         if decoded is None:
             raise unreadable_photo()
         validate_photo(decoded, declared_type)

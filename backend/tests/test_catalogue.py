@@ -1,5 +1,6 @@
 import base64
 import json
+import os
 from concurrent.futures import ThreadPoolExecutor
 from hashlib import sha256
 from io import BytesIO
@@ -344,9 +345,11 @@ def test_catalogue_private_store_matches_typescript_format_and_authenticates_key
     next_path = directory / sha256(next_key.encode()).hexdigest()
     stored = next_path.read_bytes()
     assert AESGCM(key).decrypt(stored[:12], stored[28:] + stored[12:28], next_key.encode()) == b"Python private bytes"
-    assert S_IMODE(next_path.stat().st_mode) == 0o600
-    assert S_IMODE(directory.stat().st_mode) == 0o700
-    assert S_IMODE(directory.parent.stat().st_mode) == 0o700
+    # Windows exposes different mode bits; these checks verify POSIX permissions.
+    if os.name == "posix":
+        assert S_IMODE(next_path.stat().st_mode) == 0o600
+        assert S_IMODE(directory.stat().st_mode) == 0o700
+        assert S_IMODE(directory.parent.stat().st_mode) == 0o700
     next_path.write_bytes(path.read_bytes())
     with pytest.raises(InvalidTag):
         store.get(next_key)

@@ -6,9 +6,8 @@ from psycopg.types.json import Jsonb
 
 from ..capacity.infrastructure import json_bytes
 from ..db import iso, one, rows
-from ..problems import Problem
+from ..problems import Problem, ResourceNotFound
 from ..work.queue import milestone
-from .domain import at_millisecond
 
 
 def stale_review() -> Problem:
@@ -16,7 +15,7 @@ def stale_review() -> Problem:
 
 
 def missing() -> Problem:
-    return Problem("NOT_FOUND", 404, "This resource was not found.")
+    return ResourceNotFound("This resource was not found.")
 
 
 def checkout_digest(checkout: dict) -> bytes:

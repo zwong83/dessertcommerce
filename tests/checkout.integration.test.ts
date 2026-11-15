@@ -2,10 +2,10 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import test from "node:test";
 import { setTimeout as delay } from "node:timers/promises";
-import { createCart } from "../src/server/cart/service";
-import { problemResponse } from "../src/server/http/problem";
-import { createIdentity } from "../src/server/identity/service";
-import { createOrderService, orderRoutes } from "../src/server/order";
+import { createCart } from "./legacy-backend/cart/service";
+import { problemResponse } from "./legacy-backend/http/problem";
+import { createIdentity } from "./legacy-backend/identity/service";
+import { createOrderService, orderRoutes } from "./legacy-backend/order";
 import { startTestPostgres } from "./postgres-harness";
 
 const origin = "http://127.0.0.1:3000";

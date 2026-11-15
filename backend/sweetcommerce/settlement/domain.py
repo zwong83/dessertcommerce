@@ -1,15 +1,29 @@
 from datetime import datetime, timedelta
+from enum import StrEnum
 
 from ..clock import iso
-from ..problems import Problem
+from ..order.domain import OrderStatus
+from ..problems import InvalidTransition, Problem
 
-ACTIVE_ORDER = frozenset(("PENDING_PROOF", "PAYMENT_REVIEW", "EXCEPTION"))
-ACTIVE_CHARGE = frozenset(("OPEN", "PROOF_REVIEW", "DISPUTED"))
+
+class ChargeState(StrEnum):
+    OPEN = "OPEN"
+    PROOF_REVIEW = "PROOF_REVIEW"
+    PAID = "PAID"
+    DISPUTED = "DISPUTED"
+    EXPIRED = "EXPIRED"
+    CANCELLED = "CANCELLED"
+    PARTIALLY_REFUNDED = "PARTIALLY_REFUNDED"
+    REFUNDED = "REFUNDED"
+
+
+ACTIVE_ORDER = frozenset((OrderStatus.PENDING_PROOF, OrderStatus.PAYMENT_REVIEW, OrderStatus.EXCEPTION))
+ACTIVE_CHARGE = frozenset((ChargeState.OPEN, ChargeState.PROOF_REVIEW, ChargeState.DISPUTED))
 TOP_UP_WINDOW = timedelta(minutes=30)
 
 
 def invalid_transition(message="This action is unavailable for the current payment state.") -> Problem:
-    return Problem("INVALID_TRANSITION", 409, message)
+    return InvalidTransition(message)
 
 
 def proof_view(proof):
@@ -59,7 +73,7 @@ def charge_view(charge, money, now: datetime, *, pending: bool, qr_url=None, adm
         if money["available"]:
             actions.append("RESERVE_REFUND")
         actions.append("OPEN_SETTLEMENT_CASE")
-    elif active or charge["state"] in ("EXPIRED", "CANCELLED"):
+    elif active or charge["state"] in (ChargeState.EXPIRED, ChargeState.CANCELLED):
         actions.append("UPLOAD_PROOF")
     return {
         "id": str(charge["id"]), "category": charge["category"], "state": charge["state"],

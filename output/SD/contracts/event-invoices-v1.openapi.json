@@ -1,0 +1,170 @@
+{
+  "openapi": "3.1.0",
+  "info": { "title": "SweetCommerce Event Invoices", "version": "1.0.0" },
+  "servers": [{ "url": "/api/v1" }],
+  "security": [{ "Session": [] }],
+  "paths": {
+    "/admin/invoice-template": {
+      "get": {
+        "operationId": "getInvoiceTemplate",
+        "responses": { "200": { "$ref": "#/components/responses/Template" } }
+      }
+    },
+    "/admin/invoice-template/draft": {
+      "put": {
+        "operationId": "saveInvoiceTemplateDraft",
+        "parameters": [{ "$ref": "#/components/parameters/Csrf" }, { "$ref": "#/components/parameters/Version" }],
+        "requestBody": { "$ref": "#/components/requestBodies/Template" },
+        "responses": { "200": { "$ref": "#/components/responses/Template" } }
+      }
+    },
+    "/admin/invoice-template/publish": {
+      "post": {
+        "operationId": "publishInvoiceTemplate",
+        "parameters": [{ "$ref": "#/components/parameters/Csrf" }, { "$ref": "#/components/parameters/Version" }],
+        "requestBody": { "$ref": "#/components/requestBodies/Template" },
+        "responses": { "200": { "$ref": "#/components/responses/Template" } }
+      }
+    },
+    "/admin/invoice-template/preview/{kind}": {
+      "parameters": [{ "$ref": "#/components/parameters/Kind" }],
+      "post": {
+        "operationId": "previewInvoiceTemplate",
+        "parameters": [{ "$ref": "#/components/parameters/Csrf" }],
+        "requestBody": { "$ref": "#/components/requestBodies/Template" },
+        "responses": { "200": {
+          "description": "Rendered pages of the sample PDF",
+          "content": { "application/json": { "schema": { "type": "object", "required": ["pages"], "properties": {
+            "pages": { "type": "array", "items": { "type": "string", "contentEncoding": "base64", "contentMediaType": "image/png" } }
+          } } } }
+        } }
+      }
+    },
+    "/events/{eventId}/invoices": {
+      "parameters": [{ "$ref": "#/components/parameters/EventId" }],
+      "get": {
+        "operationId": "listOwnEventInvoices",
+        "responses": { "200": { "$ref": "#/components/responses/InvoiceList" } }
+      }
+    },
+    "/admin/events/{eventId}/invoices": {
+      "parameters": [{ "$ref": "#/components/parameters/EventId" }],
+      "get": {
+        "operationId": "listMerchantEventInvoices",
+        "responses": { "200": { "$ref": "#/components/responses/InvoiceList" } }
+      }
+    },
+    "/admin/events/{eventId}/invoices/{kind}": {
+      "parameters": [{ "$ref": "#/components/parameters/EventId" }, { "$ref": "#/components/parameters/Kind" }],
+      "post": {
+        "operationId": "issueExistingEventInvoice",
+        "parameters": [{ "$ref": "#/components/parameters/Csrf" }],
+        "responses": { "200": {
+          "description": "Stable invoice reference",
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/InvoiceReference" } } }
+        } }
+      }
+    },
+    "/events/{eventId}/invoices/{kind}/pdf": {
+      "parameters": [{ "$ref": "#/components/parameters/EventId" }, { "$ref": "#/components/parameters/Kind" }],
+      "get": {
+        "operationId": "downloadOwnEventInvoice",
+        "responses": { "200": { "$ref": "#/components/responses/InvoicePdf" } }
+      }
+    },
+    "/admin/events/{eventId}/invoices/{kind}/pdf": {
+      "parameters": [{ "$ref": "#/components/parameters/EventId" }, { "$ref": "#/components/parameters/Kind" }],
+      "get": {
+        "operationId": "downloadMerchantEventInvoice",
+        "responses": { "200": { "$ref": "#/components/responses/InvoicePdf" } }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": { "Session": { "type": "apiKey", "in": "cookie", "name": "__Host-sc-session" } },
+    "parameters": {
+      "EventId": { "name": "eventId", "in": "path", "required": true, "schema": { "type": "string", "format": "uuid" } },
+      "Kind": { "name": "kind", "in": "path", "required": true, "schema": { "$ref": "#/components/schemas/InvoiceKind" } },
+      "Csrf": { "name": "X-CSRF-Token", "in": "header", "required": true, "schema": { "type": "string" } },
+      "Version": { "name": "If-Match", "in": "header", "required": true, "schema": { "type": "string" } }
+    },
+    "requestBodies": {
+      "Template": { "required": true, "content": { "application/json": { "schema": {
+        "type": "object", "additionalProperties": false, "required": ["template"],
+        "properties": { "template": { "$ref": "#/components/schemas/InvoiceTemplate" } }
+      } } } }
+    },
+    "responses": {
+      "Template": { "description": "Merchant template state", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/TemplateState" } } } },
+      "InvoiceList": { "description": "Issued invoices with merchant-only issuance eligibility", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/EventInvoices" } } } },
+      "InvoicePdf": {
+        "description": "Issued PDF attachment",
+        "headers": { "Content-Disposition": { "schema": { "type": "string" } }, "Cache-Control": { "schema": { "type": "string" } } },
+        "content": { "application/pdf": { "schema": { "type": "string", "format": "binary" } } }
+      }
+    },
+    "schemas": {
+      "InvoiceSection": { "type": "string", "enum": ["header", "billing", "items", "payment", "footer"] },
+      "InvoiceKind": { "type": "string", "enum": ["booking", "extras"] },
+      "InvoiceLogo": {
+        "type": "object", "required": ["mediaType", "data"], "additionalProperties": false,
+        "properties": { "mediaType": { "type": "string", "enum": ["image/png", "image/jpeg", "image/webp"] }, "data": { "type": "string", "contentEncoding": "base64" } }
+      },
+      "InvoiceTemplate": {
+        "type": "object", "additionalProperties": false, "required": ["order", "header", "billing", "items", "payment", "footer"],
+        "properties": {
+          "order": { "type": "array", "items": { "$ref": "#/components/schemas/InvoiceSection" }, "minItems": 5, "maxItems": 5, "uniqueItems": true },
+          "header": {
+            "type": "object", "additionalProperties": false, "required": ["title", "issuer", "issuerDetails", "accent", "logo"],
+            "properties": {
+              "title": { "type": "string", "minLength": 1, "maxLength": 32 },
+              "issuer": { "type": "string", "minLength": 1, "maxLength": 90 },
+              "issuerDetails": { "type": "string", "maxLength": 280 },
+              "accent": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+              "logo": { "oneOf": [{ "$ref": "#/components/schemas/InvoiceLogo" }, { "type": "null" }] }
+            }
+          },
+          "billing": {
+            "type": "object", "additionalProperties": false, "required": ["billedTo", "venue"],
+            "properties": { "billedTo": { "type": "string", "minLength": 1, "maxLength": 42 }, "venue": { "type": "string", "minLength": 1, "maxLength": 42 } }
+          },
+          "items": {
+            "type": "object", "additionalProperties": false, "required": ["description", "quantity", "unitPrice", "amount", "style"],
+            "properties": {
+              "description": { "type": "string", "minLength": 1, "maxLength": 40 },
+              "quantity": { "type": "string", "minLength": 1, "maxLength": 16 },
+              "unitPrice": { "type": "string", "minLength": 1, "maxLength": 24 },
+              "amount": { "type": "string", "minLength": 1, "maxLength": 24 },
+              "style": { "type": "string", "enum": ["tinted", "plain", "striped"] }
+            }
+          },
+          "payment": {
+            "type": "object", "additionalProperties": false, "required": ["heading", "instructions"],
+            "properties": { "heading": { "type": "string", "minLength": 1, "maxLength": 48 }, "instructions": { "type": "string", "maxLength": 480 } }
+          },
+          "footer": {
+            "type": "object", "additionalProperties": false, "required": ["visible", "text"],
+            "properties": { "visible": { "type": "boolean" }, "text": { "type": "string", "maxLength": 480 } }
+          }
+        }
+      },
+      "TemplateState": {
+        "type": "object", "required": ["version", "draft", "publishedRevision", "hasUnpublishedChanges"],
+        "properties": {
+          "version": { "type": "integer" }, "draft": { "$ref": "#/components/schemas/InvoiceTemplate" },
+          "publishedRevision": { "type": "integer" }, "hasUnpublishedChanges": { "type": "boolean" }
+        }
+      },
+      "InvoiceReference": {
+        "type": "object", "required": ["kind", "number"],
+        "properties": { "kind": { "$ref": "#/components/schemas/InvoiceKind" }, "number": { "type": "string" } }
+      },
+      "EventInvoices": {
+        "type": "object", "required": ["items"], "properties": {
+          "items": { "type": "array", "items": { "$ref": "#/components/schemas/InvoiceReference" } },
+          "canIssue": { "type": "array", "items": { "$ref": "#/components/schemas/InvoiceKind" } }
+        }
+      }
+    }
+  }
+}

@@ -15,6 +15,13 @@ Revision 0.5 runtime migration design, 9 November 2026. Scope F01–F08. [Index]
 | DES-05 Access | Authentication derives a principal. Owner filtering and administrator authorization run in every use case and repository boundary that reads or writes private resources. Adapters do not decide business eligibility. |
 | DES-06 Work | Commit deterministic work and business effects together. The worker rechecks authoritative state, timestamp and revision under the owning transaction. A provider timeout cannot change an order or receipt. |
 
+### Implementation conventions
+
+- Define closed business vocabularies as Python `StrEnum` types in their owning domain: identity roles and OTP purposes, fulfilment modes, payment methods, product and order statuses, event statuses and charge states. Preserve the explicit values in PostgreSQL and HTTP contracts. Validate untrusted inputs before enum conversion; use enums in domain policies and transition tables.
+- Keep business policy constants beside the rules that own them. Use named durations and cutoff values, including OTP/proof windows, standard same-day cutoffs and event lead time. Keep merchant-configurable settings in configuration. Avoid utility classes that only group constants.
+- Use focused `Problem` subclasses for common application failures: authentication, access denial, missing resources, stale versions, invalid transitions, validation and dependency availability. Existing factory functions return these exceptions; callers decide where to raise them. Feature-specific errors retain their contract codes and messages. The HTTP boundary serializes all subclasses through the existing problem handler; provider translation preserves causes when rethrowing an underlying failure.
+- Review behavior, transaction boundaries, ownership and recovery alongside naming. A completed clean-code review does not prevent later focused improvements; verify changes against existing contract and regression suites.
+
 ### Increment 1 migration and cutover
 
 Move the already implemented identity and recovery, persistent cart, catalogue and gallery, capacity and operating calendar, checkout and owned order projection, and initial proof-expiry work. Keep the existing PostgreSQL migration history, immutable snapshots, idempotency records and lease fencing. Stop the old worker before switching runtime entry points; restart the new worker against the same durable jobs. Roll back the API and worker as a pair if a parity gate fails. Capture role/grant, contract, real PostgreSQL concurrency, media, deadline and web bridge evidence before retiring the reference runtime.

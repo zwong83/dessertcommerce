@@ -2,13 +2,13 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { GalleryEditor } from "../src/ui/merchant-catalog-gallery";
-import { ProductIdentityFields } from "../src/ui/merchant-catalog";
+import { GalleryEditor } from "../frontend/ui/merchant-catalog-gallery";
+import { ProductIdentityFields } from "../frontend/ui/merchant-catalog";
 import {
   CatalogueError, addStagedPhoto, createProduct, movePhoto, photoIssue, prepareProductUpdate,
   priceInSen, publicationActions, readProducts, refreshMerchantSession, stagePhoto, updateProduct,
   type Product,
-} from "../src/ui/merchant-catalog-model";
+} from "../frontend/ui/merchant-catalog-model";
 
 const product: Product = {
   id: "8e109917-7b8e-4ba1-8765-cbfae1af7192", name: "Lemon tart",
@@ -56,7 +56,7 @@ test("SC-15 identifies invalid fields and converts accepted MYR prices to exact 
   }));
   assert.match(html, /<label for="category">Category<\/label>/);
   assert.match(html, /<input[^>]*id="category"[^>]*aria-invalid="true"[^>]*aria-describedby="category-error"/);
-  assert.match(html, /id="category-error"> Enter a category before listing\./);
+  assert.match(html, /id="category-error">\s*Enter a category before listing\./);
 });
 
 test("SC-24 and SC-25 render ordered protected previews, keep a separate saved gallery and allow replacement at the limit", () => {
@@ -71,7 +71,7 @@ test("SC-24 and SC-25 render ordered protected previews, keep a separate saved g
     productId: product.id, ids: [...changed, ...Array.from({ length: 10 }, (_, i) => `photo-${i}`)],
     savedIds: saved, onUpload() {}, onMove() {}, onRemove() {},
   }));
-  assert.match(html, /Photo 1 · Cover · Staged/);
+  assert.match(html, /Photo 1<span>Cover · Staged<\/span>/);
   assert.match(html, new RegExp(`/api/v1/admin/products/${product.id}/media/new-cover" alt="Cover photo"`));
   assert.match(html, /aria-label="Move photo 1 earlier"/);
   assert.match(html, /aria-label="Replace photo 12"/);

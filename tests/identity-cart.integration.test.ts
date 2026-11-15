@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import test from "node:test";
-import { createCart } from "../src/server/cart/service";
-import { cartRoutes } from "../src/server/cart/routes";
-import { ApiProblem, problemResponse } from "../src/server/http/problem";
-import { identityRoutes } from "../src/server/identity/routes";
-import { createIdentity } from "../src/server/identity/service";
+import { createCart } from "./legacy-backend/cart/service";
+import { cartRoutes } from "./legacy-backend/cart/routes";
+import { ApiProblem, problemResponse } from "./legacy-backend/http/problem";
+import { identityRoutes } from "./legacy-backend/identity/routes";
+import { createIdentity } from "./legacy-backend/identity/service";
 import { startTestPostgres } from "./postgres-harness";
 
 const origin = "http://127.0.0.1:3000";

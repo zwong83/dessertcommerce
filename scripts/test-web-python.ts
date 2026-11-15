@@ -4,12 +4,12 @@ import { randomBytes, randomUUID } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { setTimeout as delay } from "node:timers/promises";
 import sharp from "sharp";
-import type { components, operations } from "../src/contracts/commercial-v1";
-import { createCart } from "../src/server/cart/service";
-import { createIdentity } from "../src/server/identity/service";
-import { createOrderService } from "../src/server/order";
-import { freeLoopbackPort, startTestPostgres } from "../tests/postgres-harness";
-import { databaseUrl, startPython, waitForExit } from "./python-runtime";
+import type { components, operations } from "../frontend/contracts/commercial-v1";
+import { createCart } from "../tests/legacy-backend/cart/service";
+import { createIdentity } from "../tests/legacy-backend/identity/service";
+import { createOrderService } from "../tests/legacy-backend/order";
+import { databaseUrl, freeLoopbackPort, startTestPostgres } from "../tests/postgres-harness";
+import { startPython, waitForExit } from "./python-runtime";
 
 type Order = components["schemas"]["Order"];
 type Event = components["schemas"]["Event"];
@@ -89,6 +89,7 @@ async function verifyBridge() {
     const identity = createIdentity(fixture);
     const challenge = await identity.start("CUSTOMER", "+60000000002");
     const { token, session } = await identity.verify("CUSTOMER", challenge.challengeId, code);
+    await db.api.query("INSERT INTO account (id,role,phone_e164) VALUES ($1,'CUSTOMER',$2)", [randomUUID(), "+60000000003"]);
     const unverified = await identity.start("CUSTOMER", "+60000000003");
     await db.api.query("INSERT INTO account (id,role,phone_e164) VALUES ($1,'ADMIN',$2)", [randomUUID(), "+60000000001"]);
     await db.api.query("INSERT INTO product (id,name,category,status) VALUES ($1,'Bridge chocolate tart','Tarts','LISTED')", [product]);
@@ -133,7 +134,7 @@ async function verifyBridge() {
     }));
     const webExited = watch("Next.js", spawn(process.execPath, [
       fileURLToPath(new URL("../node_modules/next/dist/bin/next", import.meta.url)),
-      "start", "--hostname", "127.0.0.1", "--port", String(webPort),
+      "start", "frontend", "--hostname", "127.0.0.1", "--port", String(webPort),
     ], {
       stdio: "inherit",
       env: { ...process.env, NEXT_TELEMETRY_DISABLED: "1", SWEETCOMMERCE_API_ORIGIN: apiOrigin },
@@ -388,6 +389,18 @@ async function verifyBridge() {
       assert.equal(Date.parse(balance.dueAt ?? ""), Date.parse(quoteRequest.balanceDueAt));
       const resource = await db.api.query("SELECT status FROM resource_window WHERE quote_id = $1", [quote.id]);
       assert.deepEqual(resource.rows, [{ status: "BOOKED" }]);
+      const eventPage = await web(eventPath, { headers });
+      assert.equal(eventPage.status, 200);
+      const invoicePath = "/api/v1" + eventPath + "/invoices/booking/pdf";
+      const eventHtml = await eventPage.text();
+      assert.ok(eventHtml.includes(invoicePath) && eventHtml.includes("Download ") && eventHtml.includes("booking invoice"),
+        "The customer's event page renders an issued PDF download link");
+      const invoice = await web(invoicePath, { headers });
+      await expectStatus(invoice, 200, "Download the issued invoice through the web relay");
+      assert.match(invoice.headers.get("content-disposition") ?? "", /^attachment; filename="GD-INV-\d+\.pdf"$/);
+      assert.equal(invoice.headers.get("content-type"), "application/pdf");
+      assert.equal(Buffer.from(await invoice.arrayBuffer()).subarray(0, 5).toString(), "%PDF-");
+      await expectStatus(await web(invoicePath), 401, "Reject an unauthenticated PDF download");
       process.stdout.write("Dessert-table event passed request, merchant quote, customer acceptance, deposit review, receipt replay, and booking with an open balance.\n");
 
       const loggedOut = await request("POST", "/session/logout", undefined);

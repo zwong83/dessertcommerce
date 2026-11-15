@@ -6,17 +6,26 @@ from uuid import UUID
 from psycopg import Connection
 
 from sweetcommerce.db import one, rows
-from sweetcommerce.problems import Problem
+from sweetcommerce.problems import InvalidTransition, Problem
 
-from .domain import Timestamp, can_fit_capacity, is_handoff_eligible, myt_date, product_demand, uuid
+from .domain import (
+    Timestamp,
+    can_fit_capacity,
+    is_handoff_eligible,
+    myt_date,
+    product_demand,
+    uuid,
+)
 from .infrastructure import (
     CapacityClock,
     database_time,
-    lock_capacity_dates as lock_capacity_dates,
     lock_policy,
     read_days,
     read_limits,
     read_policy,
+)
+from .infrastructure import (
+    lock_capacity_dates as lock_capacity_dates,
 )
 
 AllocationState = Literal["HELD", "COMMITTED"]
@@ -73,7 +82,7 @@ def _allocate(conn: Connection, order_id: str, handoff_at: Timestamp, state: All
         (order_id, day),
     )
     if live and previous_date != day:
-        raise Problem("INVALID_TRANSITION", 409, "This order already has a live allocation.")
+        raise InvalidTransition("This order already has a live allocation.")
 
     policy = read_policy(conn)
     capacity_day = next(iter(read_days(conn, day, day)), None)

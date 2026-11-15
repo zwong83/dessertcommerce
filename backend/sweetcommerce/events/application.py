@@ -309,6 +309,9 @@ class EventService:
                 effective_balance_due_at=due, effective_balance_grace_ends_at=grace,
                 balance_deadline_revision=event["balance_deadline_revision"] + 1,
             )
+            from ..invoices.application import issue_booking
+
+            issue_booking(conn, event, quote["id"], now)
             conn.execute("""
                 UPDATE settlement_case SET status = 'RESOLVED', resolved_at = %s, resolved_by = %s
                 WHERE charge_id = %s AND kind = 'EVENT_FULFILMENT_INFEASIBLE' AND status = 'OPEN'
@@ -444,6 +447,9 @@ class EventService:
             charge_id = store.add_charge(conn, event_id, "EVENT_EXTRA", total, due, now, bill={
                 "lines": lines, "sourceQuoteId": str(quote["id"]), "termsVersion": quote["terms_version"],
             })
+            from ..invoices.application import issue_extras
+
+            issue_extras(conn, event, quote, lines, total, due, now)
             event = store.update_event(conn, event_id, now, status="ADDITIONAL_BILL")
             store.notice(conn, event, "EVENT_EXTRAS_ISSUED", now, chargeId=str(charge_id), deadline=domain.wire(due))
         else:

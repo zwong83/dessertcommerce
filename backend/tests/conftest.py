@@ -112,6 +112,8 @@ def sign_in(client, db):
             if purpose is not None:
                 body["purpose"] = purpose
         else:
+            with db.transaction() as connection:
+                connection.execute("INSERT INTO account (id, role, phone_e164) VALUES (%s, 'CUSTOMER', %s) ON CONFLICT DO NOTHING", (uuid4(), phone))
             start, verify = "/auth/otp/challenges", "/auth/otp/verify"
             body = {"phone": phone}
         created = client.post(API + start, json=body, headers={"Origin": ORIGIN})

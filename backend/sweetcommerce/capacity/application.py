@@ -1,13 +1,13 @@
 import base64
-from collections import defaultdict
-from datetime import UTC, datetime, timedelta
 import hmac
 import json
 import re
+from collections import defaultdict
+from datetime import UTC, datetime, timedelta
 
-from sweetcommerce.db import Database, iso
 from sweetcommerce.clock import utc_now
-from sweetcommerce.problems import Problem, validation
+from sweetcommerce.db import Database, iso
+from sweetcommerce.problems import Problem, VersionConflict, validation
 
 from .domain import (
     FULFILMENT_MODES,
@@ -24,12 +24,12 @@ from .domain import (
     uuid,
 )
 from .infrastructure import (
-    calendar_event_windows,
     WEEKDAYS,
     CapacityClock,
     CapacityCommand,
     affected_orders,
     audit,
+    calendar_event_windows,
     check_products,
     command,
     database_time,
@@ -53,7 +53,7 @@ _SIGNED_VALUE = re.compile(r"[A-Za-z0-9_-]+\.[A-Za-z0-9_-]{43}")
 
 
 def _conflict() -> Problem:
-    return Problem("VERSION_CONFLICT", 409, "Refresh and review the current capacity before saving.")
+    return VersionConflict("Refresh and review the current capacity before saving.")
 
 
 def _whole_number(value, low: int, high: int) -> bool:

@@ -1,7 +1,7 @@
 import re
 from datetime import UTC, datetime
 
-from ..problems import Problem, validation
+from ..problems import InvalidTransition, Problem, VersionConflict, validation
 from ..settlement.domain import ACTIVE_CHARGE, ACTIVE_ORDER
 from ..values import field_string
 
@@ -43,7 +43,7 @@ def payout_time(value) -> datetime:
 
 def check_version(charge, expected: int) -> None:
     if charge["version"] != expected:
-        raise Problem("VERSION_CONFLICT", 409, "Review the current charge before trying again.")
+        raise VersionConflict("Review the current charge before trying again.")
 
 
 def refund_limit() -> Problem:
@@ -66,4 +66,4 @@ def next_intent_state(intent, outcome: str) -> str:
         return "UNCERTAIN"
     if outcome == "CONFIRMED_NOT_PAID" and intent["status"] in ACTIVE_INTENTS:
         return "VOIDED"
-    raise Problem("INVALID_TRANSITION", 409, "This refund intent cannot be reconciled in its current state.")
+    raise InvalidTransition("This refund intent cannot be reconciled in its current state.")
