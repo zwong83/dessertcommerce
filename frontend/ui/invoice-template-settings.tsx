@@ -1,6 +1,7 @@
 import { Select } from "@/ui/select";
-import type { ReactNode } from "react";
-import type { InvoiceSection, InvoiceTemplate } from "./invoice-model";
+import { useRef, type ReactNode } from "react";
+import { Icon } from "./icons";
+import { invoiceLogoFormats, type InvoiceSection, type InvoiceTemplate } from "./invoice-model";
 
 export type UpdateSection = <S extends InvoiceSection>(section: S, patch: Partial<InvoiceTemplate[S]>) => void;
 
@@ -15,27 +16,62 @@ function TextSetting({ children, value, max, onChange, multiline = false }: {
   </label>;
 }
 
-export function TemplateSectionSettings({ section, template, update, onLogo }: {
-  section: InvoiceSection; template: InvoiceTemplate; update: UpdateSection; onLogo: (file: File) => void;
+type LogoControl = {
+  reading: boolean;
+  error: string;
+  replace: (file: File) => void;
+  restore: () => void;
+};
+
+function LogoSetting({ logo, reading, error, replace, restore }: LogoControl & {
+  logo: InvoiceTemplate["header"]["logo"];
+}) {
+  const picker = useRef<HTMLInputElement>(null);
+  const replaceButton = useRef<HTMLButtonElement>(null);
+  const logoUrl = logo ? `data:${logo.mediaType};base64,${logo.data}` : "/gather-dessert-invoice-logo.webp";
+
+  return <section className="invoice-logo-setting" aria-labelledby="invoice-logo-title">
+    <div className="invoice-logo-overview">
+      <div className="invoice-logo-preview">
+        <img src={logoUrl} alt="Current invoice logo" width={64} height={64} />
+      </div>
+      <div>
+        <h3 id="invoice-logo-title">Invoice logo</h3>
+        <p className="invoice-logo-source" role="status">
+          {reading ? "Loading logo…" : logo ? "Custom logo" : "Default Gather Dessert logo"}
+        </p>
+      </div>
+    </div>
+    <div className="invoice-logo-actions">
+      <input ref={picker} type="file" hidden accept={invoiceLogoFormats.join(",")}
+        onChange={event => {
+          const file = event.currentTarget.files?.[0];
+          event.currentTarget.value = "";
+          if (file) replace(file);
+        }} />
+      <button ref={replaceButton} type="button" className="button-secondary"
+        aria-describedby={error ? "invoice-logo-help invoice-logo-error" : "invoice-logo-help"}
+        onClick={() => picker.current?.click()}>
+        <Icon name="upload" size={17} /> Replace logo
+      </button>
+      {logo && <button className="button-quiet" type="button" onClick={() => {
+        replaceButton.current?.focus();
+        restore();
+      }}>Restore default</button>}
+    </div>
+    <p className="invoice-logo-help" id="invoice-logo-help">PNG, JPEG or WebP, up to 2 MiB.</p>
+    {error && <p className="invoice-logo-error" id="invoice-logo-error">{error}</p>}
+  </section>;
+}
+
+export function TemplateSectionSettings({ section, template, update, logoControl }: {
+  section: InvoiceSection; template: InvoiceTemplate; update: UpdateSection; logoControl: LogoControl;
 }) {
   switch (section) {
     case "header": {
       const { title, issuer, issuerDetails, accent, logo } = template.header;
-      const logoUrl = logo ? "data:" + logo.mediaType + ";base64," + logo.data : "/gather-dessert-invoice-logo.webp";
       return <>
-        <div className="invoice-logo-setting">
-          <span>Logo</span>
-          <img src={logoUrl} alt="" width={48} height={48} />
-          <label className="button button-quiet invoice-upload">Replace logo
-            <input type="file" aria-label="Replace logo" accept="image/png,image/jpeg,image/webp"
-              onChange={event => {
-                const file = event.currentTarget.files?.[0];
-                event.currentTarget.value = "";
-                if (file) onLogo(file);
-              }} />
-          </label>
-          {logo && <button type="button" onClick={() => update("header", { logo: null })}>Use default</button>}
-        </div>
+        <LogoSetting logo={logo} {...logoControl} />
         <label className="invoice-setting"><span>Accent color</span>
           <span className="invoice-color-field">
             <input type="color" aria-label="Accent color" value={accent}
