@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import test from "node:test";
-import { applyExpiry, claimExpiry, pollExpiry } from "../frontend/server/worker/expiry";
+import { applyExpiry, claimExpiry, pollExpiry } from "./legacy-backend/worker/expiry";
 import { startTestPostgres } from "./postgres-harness";
 
 test("proof expiry workers enforce the current lease and preserve timely reviews", async (context) => {

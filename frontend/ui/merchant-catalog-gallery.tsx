@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { ErrorMessage } from "./error-message";
+import { Icon } from "./icons";
 import { maxPhotos, photoPath, photoTypes } from "./merchant-catalog-model";
 
 function PhotoPreview({ productId, id, position }: { productId: string; id: string; position: number }) {
@@ -12,14 +13,14 @@ function PhotoPreview({ productId, id, position }: { productId: string; id: stri
     </p></ErrorMessage>
   ) : (
     // Use the same-origin, session-protected URL directly so the browser sends the merchant cookie.
-    <img src={photoPath(productId, id)} alt={label} width={144} height={108} loading="lazy"
-      style={{ maxWidth: "100%", objectFit: "contain" }} onError={() => setFailed(true)} />
+    <img className="product-photo-preview" src={photoPath(productId, id)} alt={label} width={320} height={240} loading="lazy"
+      onError={() => setFailed(true)} />
   );
 }
 
 export function SavedGallery({ productId, ids }: { productId: string; ids: string[] }) {
   return ids.length === 0 ? <p>No saved photos.</p> : (
-    <ol className="item-list">
+    <ol className="product-photo-grid product-saved-gallery">
       {ids.map((id, index) => <li key={id}><PhotoPreview productId={productId} id={id} position={index + 1} /></li>)}
     </ol>
   );
@@ -55,29 +56,29 @@ export function GalleryEditor({ productId, ids, savedIds, onUpload, onMove, onRe
   }, [ids]);
 
   return (
-    <fieldset id="imageRefs" tabIndex={-1} aria-describedby={issue ? "gallery-help gallery-error" : "gallery-help"}
-      style={{ minWidth: 0 }}>
-      <legend>Product gallery</legend>
+    <fieldset className="surface product-gallery" id="imageRefs" tabIndex={-1} aria-describedby={issue ? "gallery-help gallery-error" : "gallery-help"}>
+      <legend className="visually-hidden">Product gallery</legend>
+      <div className="product-section-heading"><span className="product-section-icon"><Icon name="grid" size={22} /></span><div><h2>Product photos</h2><p>Make the first photo your best first impression.</p></div><span className="product-count">{ids.length} / {maxPhotos}</span></div>
       <p id="gallery-help">Up to {maxPhotos} JPEG, PNG or WebP photos, 5 MiB each. The first photo is the cover. Save the product to apply the gallery.</p>
       {issue && <p id="gallery-error">{issue}</p>}
-      {changed && <p>Gallery changes are unsaved.</p>}
-      {ids.length === 0 ? <p>No photos in this gallery.</p> : (
-        <ol className="item-list">
+      {changed && <p className="product-unsaved">Gallery changes are unsaved.</p>}
+      {ids.length === 0 ? <div className="product-empty"><Icon name="cake" size={28} /><h3>A photo worth a first bite</h3><p>Add a product photo. Your first upload becomes the cover.</p></div> : (
+        <ol className="product-photo-grid">
           {ids.map((id, index) => (
             <li key={id} tabIndex={-1}>
-              <p>Photo {index + 1}{index === 0 ? " · Cover" : ""}{!savedIds.includes(id) ? " · Staged" : ""}</p>
+              <p className="product-photo-label">Photo {index + 1}<span>{index === 0 ? "Cover" : ""}{!savedIds.includes(id) ? (index === 0 ? " · Staged" : "Staged") : ""}</span></p>
               <PhotoPreview productId={productId} id={id} position={index + 1} />
-              <div>
-                <button type="button" disabled={index === 0} aria-label={`Move photo ${index + 1} earlier`} onClick={event => {
+              <div className="product-photo-actions">
+                <button className="button-secondary" type="button" disabled={index === 0} aria-label={`Move photo ${index + 1} earlier`} onClick={event => {
                   event.currentTarget.closest("li")?.focus();
                   onMove(index, index - 1);
-                }}>Move earlier</button>{" "}
-                <button type="button" disabled={index === ids.length - 1} aria-label={`Move photo ${index + 1} later`} onClick={event => {
+                }}><Icon name="up" size={16} /> Earlier</button>
+                <button className="button-secondary" type="button" disabled={index === ids.length - 1} aria-label={`Move photo ${index + 1} later`} onClick={event => {
                   event.currentTarget.closest("li")?.focus();
                   onMove(index, index + 1);
-                }}>Move later</button>{" "}
-                <button type="button" aria-label={`Replace photo ${index + 1}`} onClick={() => chooseReplacement(index)}>Replace</button>{" "}
-                <button type="button" aria-label={`Remove photo ${index + 1}`} onClick={event => {
+                }}>Later <Icon name="down" size={16} /></button>
+                <button className="button-quiet" type="button" aria-label={`Replace photo ${index + 1}`} onClick={() => chooseReplacement(index)}>Replace</button>
+                <button className="button-quiet" type="button" aria-label={`Remove photo ${index + 1}`} onClick={event => {
                   if (input.current?.disabled) event.currentTarget.closest("fieldset")?.focus();
                   else input.current?.focus();
                   onRemove(index);
@@ -88,20 +89,21 @@ export function GalleryEditor({ productId, ids, savedIds, onUpload, onMove, onRe
         </ol>
       )}
       {ids.length >= maxPhotos && replacement === null && <p>Gallery is full. Replace or remove a photo to add another.</p>}
-      <p>
-        <label htmlFor="catalogue-photo">{replacement === null ? "Choose a photo to add" : `Choose a replacement for photo ${replacement + 1}`}</label><br />
+      <div className="product-photo-upload"><div className="product-field">
+        <label htmlFor="catalogue-photo">{replacement === null ? "Choose a photo to add" : `Choose a replacement for photo ${replacement + 1}`}</label>
         <input id="catalogue-photo" ref={input} type="file" accept={photoTypes.join(",")}
           disabled={replacement === null && ids.length >= maxPhotos} aria-describedby="gallery-help"
           onChange={event => setFile(event.target.files?.[0] ?? null)} />
-      </p>
+      </div><div className="product-upload-actions">
       <button type="button" disabled={!file} onClick={() => file && onUpload(file, replacement)}>
         {replacement === null ? "Upload photo" : "Upload replacement"}
       </button>{" "}
-      {replacement !== null && <button type="button" onClick={() => {
+      {replacement !== null && <button className="button-quiet" type="button" onClick={() => {
         setReplacement(null);
         setFile(null);
         if (input.current) input.current.value = "";
       }}>Cancel replacement</button>}
+      </div></div>
       {changed && (
         <details>
           <summary>View currently saved gallery</summary>

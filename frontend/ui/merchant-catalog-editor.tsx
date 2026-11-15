@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { CatalogueProblem, ProductIdentityFields, useCatalogueCommand } from "./merchant-catalog";
 import { ErrorMessage } from "./error-message";
+import { Icon } from "./icons";
 import { GalleryEditor, SavedGallery } from "./merchant-catalog-gallery";
 import {
   CatalogueError, addStagedPhoto, cataloguePath, maxPhotos, movePhoto, photoIssue, prepareProductUpdate, publicationActions,
@@ -25,8 +26,8 @@ function inputProblem(issues: FieldIssues, field: string) {
 const variantInputs = [
   { name: "name", label: "Variant name", limit: 120, field: "name", inputMode: "text" },
   { name: "flavour", label: "Flavour", limit: 120, field: "flavour", inputMode: "text" },
-  { name: "price", label: "Price (MYR, e.g. 6.50)", limit: 10, field: "unitMinor", inputMode: "decimal" },
-  { name: "prep", label: "Preparation (whole minutes)", limit: 5, field: "prepMinutes", inputMode: "numeric" },
+  { name: "price", label: "Price (MYR)", limit: 10, field: "unitMinor", inputMode: "decimal" },
+  { name: "prep", label: "Preparation (minutes)", limit: 5, field: "prepMinutes", inputMode: "numeric" },
 ] as const;
 
 function VariantEditor({ index, variant, issues, change, remove }: {
@@ -37,26 +38,28 @@ function VariantEditor({ index, variant, issues, change, remove }: {
   remove: () => void;
 }) {
   return (
-    <fieldset style={{ minWidth: 0, marginBlockEnd: "1rem" }}>
+    <fieldset className="product-variant-card">
       <legend>Variant {index + 1}</legend>
+      <div className="product-variant-fields">
       {variantInputs.map(({ name, label, limit, field, inputMode }) => {
         const id = `variants.${index}.${field}`;
         return (
-          <p key={name}>
-            <label htmlFor={id}>{label}</label><br />
+          <div className="product-field" key={name}>
+            <label htmlFor={id}>{label}</label>
             <input id={id} value={variant[name]} inputMode={inputMode} maxLength={limit} required
               onChange={event => change({ [name]: event.target.value })} {...inputProblem(issues, id)} />
-            {issues[id] && <span id={id + "-error"}> {issues[id]}</span>}
-          </p>
+            {issues[id] && <span className="product-field-error" id={id + "-error"}>{issues[id]}</span>}
+          </div>
         );
       })}
-      <p>
-        <label>
-          <input type="checkbox" checked={variant.available} style={{ minHeight: "auto" }}
+      </div>
+      <div className="product-variant-footer">
+        <label className="product-availability">
+          <input type="checkbox" checked={variant.available}
             onChange={event => change({ available: event.target.checked })} /> Available to order when listed
         </label>
-      </p>
-      {!variant.id && <button type="button" onClick={remove} aria-label={`Remove new variant ${index + 1}`}>Remove new variant</button>}
+      {!variant.id && <button className="button-quiet" type="button" onClick={remove} aria-label={`Remove new variant ${index + 1}`}>Remove new variant</button>}
+      </div>
     </fieldset>
   );
 }
@@ -206,13 +209,14 @@ function EditProduct({ product: initialProduct, session }: { product: Product; s
 
   return (
     <>
-      <p><Link href={cataloguePath} onNavigate={event => {
+      <p className="product-breadcrumb"><Link href={cataloguePath} onNavigate={event => {
         if (atRisk && !window.confirm("Leave the editor and lose unsaved changes or pending retries?")) event.preventDefault();
-      }}>Back to catalogue</Link></p>
-      <h2 style={{ overflowWrap: "anywhere" }}>{saved.name}</h2>
-      <p>Saved status: <strong>{statusNames[saved.status]}</strong> · Version {saved.version}</p>
-      {dirty && <p>You have unsaved changes.</p>}
-      <p ref={statusRegion} tabIndex={-1} role="status">{command.busy ? "Working…" : notice}</p>
+      }}>← Back to catalogue</Link></p>
+      <div className="page-heading product-editor-heading"><div><p className="eyebrow">Catalogue / Product editor</p><h1>{saved.name}</h1><p>Manage the details, choices and photos your customers see.</p></div>
+        <div className="product-editor-meta"><span className="product-status" data-status={saved.status}>{statusNames[saved.status]}</span><span>Version {saved.version}</span>{dirty && <span className="product-unsaved">Unsaved changes</span>}</div>
+      </div>
+      <nav className="product-section-nav" aria-label="Product sections"><a href="#product-details">Details</a><a href="#variants">Variants</a><a href="#imageRefs">Photos</a><a href="#publication">Publication</a></nav>
+      <p className={command.busy || notice ? "product-notice" : "visually-hidden"} ref={statusRegion} tabIndex={-1} role="status">{command.busy ? "Working…" : notice}</p>
       {command.error && <CatalogueProblem error={command.error} focus>
         {!conflict && !command.retry && <p>Your draft remains in the editor.</p>}
       </CatalogueProblem>}
@@ -243,7 +247,7 @@ function EditProduct({ product: initialProduct, session }: { product: Product; s
         </p>
       )}
       {conflict && (
-        <section aria-labelledby="version-conflict">
+        <section className="surface product-conflict" aria-labelledby="version-conflict">
           <h3 id="version-conflict">A newer version is saved</h3>
           <p>Your edits are still below. Review the latest version before deciding whether to discard your draft.</p>
           <button type="button" disabled={checking} onClick={() => void checkLatest()}>Check latest version</button>
@@ -272,16 +276,20 @@ function EditProduct({ product: initialProduct, session }: { product: Product; s
           )}
         </section>
       )}
-      <form onSubmit={submit} style={{ display: "block", overflowWrap: "anywhere" }}>
-        <fieldset disabled={locked || archived} style={{ minWidth: 0 }}>
-          <legend>Product details</legend>
+      <form className="product-editor-form" onSubmit={submit}>
+        <fieldset disabled={locked || archived} className="product-fieldset-reset">
+          <legend className="visually-hidden">Edit product</legend>
+          <div className="product-editor-layout"><div className="product-editor-main">
+          <section id="product-details" className="surface product-editor-section" aria-labelledby="product-details-heading">
+          <div className="product-section-heading"><span className="product-section-icon"><Icon name="cake" size={22} /></span><div><h2 id="product-details-heading">Product details</h2><p>The essentials for your menu.</p></div></div>
           <ProductIdentityFields name={name} category={category} issues={issues}
             onName={value => { setName(value); clearIssues(); }} onCategory={value => { setCategory(value); clearIssues(); }} />
-          <section id="variants" tabIndex={-1} aria-labelledby="variants-heading">
-            <h3 id="variants-heading">Fixed variants and flavours</h3>
-            <p>Turn off availability to retire an existing variant. Its purchase history stays intact.</p>
+          </section>
+          <section className="surface product-editor-section" id="variants" tabIndex={-1} aria-labelledby="variants-heading">
+            <div className="product-section-heading"><span className="product-section-icon"><Icon name="grid" size={22} /></span><div><h2 id="variants-heading">Variants &amp; flavours</h2><p>Set a price and preparation time for each choice.</p></div><span className="product-count">{variants.length} / 100</span></div>
+            <p className="product-section-help">Turn off availability to retire an existing variant while keeping its purchase history.</p>
             {issues.variants && <p>{issues.variants}</p>}
-            {variants.length === 0 && <p>No variants added.</p>}
+            {variants.length === 0 && <div className="product-empty"><Icon name="cake" size={28} /><h3>Every dessert needs a choice</h3><p>Add your first variant with a flavour, price and preparation time.</p></div>}
             {variants.map((variant, index) => (
               <VariantEditor key={variant.key} index={index} variant={variant} issues={issues}
                 change={value => { clearIssues(); setVariants(current => current.map(item => item.key === variant.key ? { ...item, ...value } : item)); }}
@@ -291,7 +299,7 @@ function EditProduct({ product: initialProduct, session }: { product: Product; s
                   document.getElementById("add-variant")?.focus();
                 }} />
             ))}
-            <button type="button" id="add-variant" disabled={variants.length >= 100} onClick={() => {
+            <button className="button-secondary product-add-variant" type="button" id="add-variant" disabled={variants.length >= 100} onClick={() => {
               clearIssues();
               focusNewVariant.current = true;
               const variant = { key: crypto.randomUUID(), name: "", flavour: "", price: "", prep: "", available: true };
@@ -299,36 +307,38 @@ function EditProduct({ product: initialProduct, session }: { product: Product; s
             }}>Add variant</button>
             {variants.length >= 100 && <p>Variant limit reached. Reuse an existing variant if needed.</p>}
           </section>
-          <fieldset disabled={conflict} style={{ minWidth: 0, padding: 0, border: 0, margin: "1rem 0" }}>
+          <fieldset disabled={conflict} className="product-fieldset-reset">
             <GalleryEditor productId={saved.id} ids={ids} savedIds={saved.imageRefs}
               onUpload={upload} onMove={(from, to) => changeGallery(movePhoto(ids, from, to), `Photo moved to position ${to + 1}.`)}
               onRemove={index => changeGallery(ids.filter((_, position) => index !== position), `Photo ${index + 1} removed from the draft.`)}
               issue={issues.imageRefs} />
           </fieldset>
-          {!archived && <button type="submit" disabled={conflict}>Save product</button>}
-          <section aria-labelledby="publication">
-            <h3 id="publication">Publication</h3>
+          {!archived && <div className="surface product-save-bar"><div><strong>{dirty ? "Ready to save your changes?" : "Your product is up to date"}</strong><p>Save details and photos. Publication status stays the same.</p></div><button type="submit" disabled={conflict}><Icon name="check" size={16} />{command.busy ? "Working…" : "Save product"}</button></div>}
+          </div>
+          <aside className="surface product-publication" aria-labelledby="publication">
+            <p className="eyebrow">Visibility</p><h2 id="publication">Publication</h2>
+            <div className="product-publication-status"><span>Saved status</span><span className="product-status" data-status={saved.status}>{statusNames[saved.status]}</span></div>
             {archived ? <p>Archived products are read-only.</p> : (
               <>
-                <p>Publication changes save the whole product, including its gallery.</p>
-                <div>
+                <p className="product-section-help">Choose an action, then confirm. This also saves your details, variants and photos.</p>
+                <div className="product-publication-actions">
                   {publicationActions[saved.status].map(item => (
-                    <button key={item.to} type="button" disabled={conflict} aria-pressed={item.to === target}
+                    <button className="button-secondary" data-destructive={item.to === "ARCHIVED" || undefined} key={item.to} type="button" disabled={conflict} aria-pressed={item.to === target}
                       onClick={event => { publicationButton.current = event.currentTarget; setTarget(item.to); }}>{item.label}</button>
                   ))}
                 </div>
                 {action && (
-                  <div>
+                  <div className="product-publication-confirm">
                     <p id="publication-effect">{action.effect}</p>
                     <button ref={confirmButton} type="submit" disabled={conflict} aria-describedby="publication-effect">
                       Confirm: {action.label}
                     </button>{" "}
-                    <button type="button" onClick={() => { setTarget(null); publicationButton.current?.focus(); }}>Cancel publication change</button>
+                    <button className="button-quiet" type="button" onClick={() => { setTarget(null); publicationButton.current?.focus(); }}>Cancel publication change</button>
                   </div>
                 )}
               </>
             )}
-          </section>
+          </aside></div>
         </fieldset>
       </form>
     </>
@@ -353,7 +363,8 @@ export function MerchantProductEditor({ productId, accountId, csrfToken }: Merch
   if (product) return <EditProduct product={product} session={{ accountId, csrfToken }} />;
   return (
     <>
-      <p><Link href={cataloguePath}>Back to catalogue</Link></p>
+      <p className="product-breadcrumb"><Link href={cataloguePath}>← Back to catalogue</Link></p>
+      <div className="page-heading"><div><p className="eyebrow">Catalogue</p><h1>Product editor</h1></div></div>
       {error ? (
         <>
           <CatalogueProblem error={error} />

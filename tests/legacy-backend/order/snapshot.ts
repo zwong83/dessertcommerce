@@ -1,4 +1,4 @@
-import type { components } from "../../contracts/standard-v1";
+import type { components } from "../../../frontend/contracts/standard-v1";
 import { addDays, canFitCapacity, earliestHandoff, isHandoffEligible, mytDate } from "../capacity/domain";
 import { productDemand, readDays, readLimits, readPolicy, type ItemRow } from "../capacity/store";
 import type { Queryable } from "../db";

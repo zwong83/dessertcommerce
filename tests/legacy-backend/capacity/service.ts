@@ -1,5 +1,5 @@
 import type { Pool } from "pg";
-import type { components, operations } from "../../contracts/standard-v1";
+import type { components, operations } from "../../../frontend/contracts/standard-v1";
 import { withTransaction, type Queryable } from "../db";
 import { ApiProblem, validation } from "../http/problem";
 import { audit, command, conflict, createImpactSigner, requireRole, type CapacityActor, type CapacityCommand } from "./commands";

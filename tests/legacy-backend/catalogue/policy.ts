@@ -1,5 +1,5 @@
 import { createHash } from "node:crypto";
-import type { components, operations } from "../../contracts/standard-v1";
+import type { components, operations } from "../../../frontend/contracts/standard-v1";
 import { ApiProblem } from "../http/problem";
 
 export type Product = components["schemas"]["Product"];

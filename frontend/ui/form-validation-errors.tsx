@@ -27,7 +27,9 @@ export function FormValidationErrors() {
       // A single submit can dispatch invalid on several fields. Start with the first one.
       if (reset !== undefined) return;
       reset = window.setTimeout(() => { reset = undefined; }, 0);
-      const label = field.labels?.[0]?.textContent?.trim().replace(/\s+/g, " ");
+      const labelElement = field.labels?.[0]?.cloneNode(true) as HTMLElement | undefined;
+      labelElement?.querySelectorAll("input, select, textarea, button, .select-control, .date-input").forEach(control => control.remove());
+      const label = labelElement?.textContent?.trim().replace(/\s+/g, " ");
       setIssue({ field, message: label ? `${label}: ${field.validationMessage}` : field.validationMessage, sequence: ++sequence.current });
       focus = window.requestAnimationFrame(() => field.focus());
     }

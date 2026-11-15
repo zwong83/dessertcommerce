@@ -74,6 +74,10 @@ def _unauthenticated():
     return AuthenticationRequired("Sign in to continue.")
 
 
+def _merchant_registration_conflict():
+    return Problem("REGISTRATION_CONFLICT", 409, "Merchant credentials already exist. Log in with your username and password.")
+
+
 class IdentityService:
     def __init__(
         self,
@@ -177,7 +181,7 @@ class IdentityService:
         if purpose == Purpose.MERCHANT_SETUP and not store.insert_merchant_profile(
             conn, account_id, registration, hash_password(registration.password),
         ):
-            raise Problem("REGISTRATION_CONFLICT", 409, "Merchant sign-up is complete. Log in or recover merchant access.")
+            raise _merchant_registration_conflict()
         if role == Role.ADMIN and row["purpose"] == Purpose.RECOVERY:
             store.recover_admin(conn, account_id, current)
         store.consume_challenge(conn, challenge_id, current)
@@ -241,6 +245,24 @@ class IdentityService:
             if not enrollment or (enrollment["id"], enrollment["credential_epoch"]) != (account["id"], account["credential_epoch"]):
                 raise Problem("CREDENTIALS_INVALID", 401, "The username or password is incorrect.")
             session = self._open_session(conn, account["id"], Role.ADMIN, token, self._now(), PasswordAction.MERCHANT_SIGN_IN, str(uuid4()))
+        return token, session
+
+    def register_merchant_with_link(self, registration: Registration, phone: str, setup_token: str) -> tuple[str, Session]:
+        invalid_link = "Open a valid merchant setup link to sign up."
+        token = store.base64url(token_bytes(32))
+        with self._db.transaction() as conn:
+            if not store.merchant_setup_link_exists(conn, setup_token, self._now()):
+                raise AccessDenied(invalid_link)
+            enrollment = store.lock_admin(conn)
+            now = self._now()
+            if not enrollment or not store.consume_merchant_setup_link(conn, enrollment, setup_token, now):
+                raise AccessDenied(invalid_link)
+            if enrollment["phone_e164"] != phone:
+                raise AccessDenied("Use the phone number enrolled for this merchant.")
+            account_id = enrollment["id"]
+            if not store.insert_merchant_profile(conn, account_id, registration, hash_password(registration.password)):
+                raise _merchant_registration_conflict()
+            session = self._open_session(conn, account_id, Role.ADMIN, token, now, Purpose.MERCHANT_SETUP, str(uuid4()))
         return token, session
 
     @staticmethod

@@ -33,7 +33,3 @@ export function problemResponse(error: unknown, requestId: string) {
   }
   return Response.json(body, { status: problem.status, headers });
 }
-
-export function validation(message = "Check the submitted information.") {
-  return new ApiProblem("VALIDATION", 422, message);
-}

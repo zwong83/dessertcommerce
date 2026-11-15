@@ -5,8 +5,7 @@ export default async function MerchantProductPage({ params }: { params: Promise<
   const { accountId, csrfToken } = await requirePageSession("ADMIN");
   const { productId } = await params;
   return (
-    <main>
-      <h1>Product editor</h1>
+    <main className="wide-page product-editor-page">
       <MerchantProductEditor key={`${accountId}:${productId}`} productId={productId} accountId={accountId} csrfToken={csrfToken} />
     </main>
   );

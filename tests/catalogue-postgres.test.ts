@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import test from "node:test";
 import { crc32 } from "node:zlib";
-import { CatalogueService, MAX_PHOTO_BYTES, type Product, type UpdateProduct } from "../frontend/server/catalogue";
-import { ApiProblem } from "../frontend/server/http/problem";
+import { CatalogueService, MAX_PHOTO_BYTES, type Product, type UpdateProduct } from "./legacy-backend/catalogue";
+import { ApiProblem } from "./legacy-backend/http/problem";
 import { startTestPostgres } from "./postgres-harness";
 
 const admin = { accountId: randomUUID(), role: "ADMIN" } as const;

@@ -1,5 +1,7 @@
 "use client";
 
+import { DateInput } from "@/ui/date-input";
+import { Select } from "@/ui/select";
 import { ErrorMessage } from "./error-message";
 
 import { useRouter } from "next/navigation";
@@ -132,13 +134,13 @@ export function Checkout({ cart, csrfToken }: { cart: Cart; csrfToken: string })
         </div>
       )}
       <form className="surface form-stack" onSubmit={review} hidden={Boolean(data || recoverId)}>
-        <label htmlFor="handoff">Requested handoff (Malaysia time)</label><input id="handoff" name="handoff" type="datetime-local" required />
+        <label htmlFor="handoff">Requested handoff (Malaysia time)</label><DateInput id="handoff" name="handoff" type="datetime-local" required />
         <label htmlFor="fulfilment">Handoff method</label>
-        <select id="fulfilment" value={mode} onChange={(event) => setMode(event.target.value as Mode)}>
+        <Select id="fulfilment" value={mode} onChange={(event) => setMode(event.target.value as Mode)}>
           <option value="PICKUP">Self pickup</option>
           <option value="MERCHANT_LALAMOVE">Merchant arranges Lalamove</option>
           <option value="CUSTOMER_LALAMOVE">I arrange and pay Lalamove directly</option>
-        </select>
+        </Select>
         <label htmlFor="contact-name">Contact name</label><input id="contact-name" name="name" required maxLength={120} />
         <label htmlFor="contact-phone">Contact phone</label><input id="contact-phone" name="phone" type="tel" required maxLength={24} />
         <label htmlFor="notice-email">Notification email (optional)</label><input id="notice-email" name="email" type="email" maxLength={254} />
@@ -172,9 +174,9 @@ export function Checkout({ cart, csrfToken }: { cart: Cart; csrfToken: string })
           {data.eligible && (
             <form className="form-stack" onSubmit={finish}>
               <label htmlFor="payment">Payment method</label>
-              <select id="payment" name="payment" defaultValue={data.paymentMethods[0]} required>
+              <Select id="payment" name="payment" defaultValue={data.paymentMethods[0]} required>
                 {data.paymentMethods.map((method) => <option key={method} value={method}>{method === "CASH" ? "Cash at pickup" : "DuitNow"}</option>)}
-              </select>
+              </Select>
               <label><input type="checkbox" required /> I agree to the reviewed terms.</label>
               <button disabled={busy || !data.paymentMethods.length} type="submit">{busy ? "Submitting…" : "Submit order"}</button>
             </form>

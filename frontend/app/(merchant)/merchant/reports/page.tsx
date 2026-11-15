@@ -1,3 +1,5 @@
+import { DateInput } from "@/ui/date-input";
+import { Select } from "@/ui/select";
 import { readBackend } from "@/server/http/backend-client";
 import { requirePageSession } from "@/server/http/page-session";
 import { ApiProblem } from "@/server/http/problem";
@@ -34,15 +36,15 @@ export default async function MerchantReports({ searchParams }: {
   }
 
   return (
-    <main>
+    <main className="wide-page reports-page">
       <header className="page-heading"><div><p className="eyebrow">Performance</p><h1>Sales and operations report</h1><p>Review verified payments and order activity. Choose up to 92 days in Malaysia time.</p></div></header>
-      <form action="/merchant/reports" className="surface filter-bar">
-        <label>From (MYT)<input type="date" name="from" required defaultValue={from} /></label>
-        <label>To (MYT)<input type="date" name="to" required defaultValue={to} /></label>
-        <label>Standard order status<select name="orderStatus" defaultValue={status}>
+      <form key={"filters:" + filters.toString()} action="/merchant/reports" className="surface filter-bar">
+        <label>From (MYT)<DateInput type="date" name="from" required defaultValue={from} /></label>
+        <label>To (MYT)<DateInput type="date" name="to" required defaultValue={to} /></label>
+        <label>Standard order status<Select name="orderStatus" defaultValue={status}>
           <option value="">All statuses</option>
           {statuses.map(state => <option key={state} value={state}>{state.toLowerCase().replaceAll("_", " ")}</option>)}
-        </select></label>
+        </Select></label>
         <button type="submit">Run report</button>
       </form>
       {error && <ErrorMessage>{error}</ErrorMessage>}

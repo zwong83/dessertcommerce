@@ -5,11 +5,11 @@ import { fileURLToPath } from "node:url";
 import { setTimeout as delay } from "node:timers/promises";
 import sharp from "sharp";
 import type { components, operations } from "../frontend/contracts/commercial-v1";
-import { createCart } from "../frontend/server/cart/service";
-import { createIdentity } from "../frontend/server/identity/service";
-import { createOrderService } from "../frontend/server/order";
-import { freeLoopbackPort, startTestPostgres } from "../tests/postgres-harness";
-import { databaseUrl, startPython, waitForExit } from "./python-runtime";
+import { createCart } from "../tests/legacy-backend/cart/service";
+import { createIdentity } from "../tests/legacy-backend/identity/service";
+import { createOrderService } from "../tests/legacy-backend/order";
+import { databaseUrl, freeLoopbackPort, startTestPostgres } from "../tests/postgres-harness";
+import { startPython, waitForExit } from "./python-runtime";
 
 type Order = components["schemas"]["Order"];
 type Event = components["schemas"]["Event"];

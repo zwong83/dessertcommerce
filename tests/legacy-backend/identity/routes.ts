@@ -1,4 +1,4 @@
-import type { operations } from "../../contracts/standard-v1";
+import type { operations } from "../../../frontend/contracts/standard-v1";
 import { validation } from "../http/problem";
 import {
   fieldString, fieldUuid, readObject, requestCookie, requireSameOrigin, sessionCookieName, setSessionCookie,

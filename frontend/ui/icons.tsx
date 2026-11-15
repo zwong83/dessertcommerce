@@ -5,6 +5,7 @@ const paths = {
   calendar: "M8 3v4m8-4v4M4 10h16M6 5h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2Z",
   chart: "M4 19h16M7 15v-4m5 4V5m5 10V8",
   check: "m5 12 4 4L19 6",
+  close: "m6 6 12 12M18 6 6 18",
   chevronDown: "m6 9 6 6 6-6",
   chevronRight: "m9 6 6 6-6 6",
   up: "M12 19V5m-6 6 6-6 6 6",

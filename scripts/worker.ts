@@ -1,5 +1,5 @@
 // Keep the established npm entry point while the Worker runs in Python.
-import { startPython, waitForExit } from "../../../scripts/python-runtime";
+import { startPython, waitForExit } from "./python-runtime";
 
 const worker = startPython("sweetcommerce.worker");
 const stop = () => worker.kill("SIGTERM");

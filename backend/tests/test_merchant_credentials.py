@@ -1,6 +1,12 @@
+from concurrent.futures import ThreadPoolExecutor
+from datetime import timedelta
+from secrets import token_urlsafe
 from uuid import uuid4
 
+import psycopg
+
 from conftest import API, ORIGIN
+from sweetcommerce.identity import infrastructure as store
 
 ADMIN_AUTH = API + "/admin/auth/"
 PHONE = "+60000000001"
@@ -48,6 +54,54 @@ def test_recovery_invalidates_the_merchant_password(client, db, clock):
         connection.execute("INSERT INTO account(id, role, phone_e164) VALUES (%s,'ADMIN',%s)", (uuid4(), PHONE))
     code = challenge(client, "registration/challenges")
     assert post(client, "registration", {**code, "registration": DETAILS}).status_code == 201
+
+
+def test_setup_link_requires_operator_enrollment_and_is_redeemable_once(client, db, dsns, clock, otp_messages):
+    route = "registration/link"
+    token = token_urlsafe(32)
+    body = {"setupToken": token, "phone": PHONE, "registration": DETAILS}
+    assert post(client, route, body).status_code == 403
+    assert post(client, route, {"phone": PHONE, "registration": DETAILS}).status_code == 422
+    with psycopg.connect(dsns["migration"], row_factory=psycopg.rows.dict_row) as connection:
+        connection.execute("SET LOCAL search_path TO sweetcommerce")
+        enrollment = store.enroll_merchant(connection, PHONE)
+        store.replace_merchant_setup_link(connection, enrollment, token, clock.current + timedelta(minutes=30))
+
+    assert post(client, route, {**body, "phone": "+60000000002"}).status_code == 403
+    assert client.post(ADMIN_AUTH + route, headers={"Origin": "https://outside.example"}, json=body).status_code == 400
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        statuses = sorted(result.status_code for result in pool.map(lambda _: post(client, route, body), range(2)))
+    assert statuses == [201, 403]
+    with db.connection() as connection:
+        assert connection.execute("SELECT count(*) AS count FROM account").fetchone()["count"] == 1
+        assert connection.execute("SELECT count(*) AS count FROM merchant_setup_link").fetchone()["count"] == 0
+    assert not otp_messages
+    credentials = {"username": DETAILS["username"], "password": DETAILS["password"]}
+    assert post(client, "password", credentials).json()["accountId"] == str(enrollment["id"])
+
+
+def test_setup_link_rejects_replaced_expired_and_recovered_tokens(client, db, dsns, clock):
+    route = "registration/link"
+    body = {"phone": PHONE, "registration": DETAILS}
+    previous, current = token_urlsafe(32), token_urlsafe(32)
+
+    def issue_link(token):
+        with psycopg.connect(dsns["migration"], row_factory=psycopg.rows.dict_row) as connection:
+            connection.execute("SET LOCAL search_path TO sweetcommerce")
+            enrollment = store.enroll_merchant(connection, PHONE)
+            store.replace_merchant_setup_link(connection, enrollment, token, clock.current + timedelta(minutes=30))
+
+    issue_link(previous)
+    issue_link(current)
+    assert post(client, route, {**body, "setupToken": previous}).status_code == 403
+    clock.advance(minutes=30)
+    assert post(client, route, {**body, "setupToken": current}).status_code == 403
+    issue_link(current)
+    recovery = challenge(client, "challenges", purpose="RECOVERY")
+    assert post(client, "sign-in", recovery).status_code == 200
+    assert post(client, route, {**body, "setupToken": current}).status_code == 403
+    with db.connection() as connection:
+        assert connection.execute("SELECT count(*) AS count FROM merchant_profile").fetchone()["count"] == 0
     recovery = challenge(client, "challenges", purpose="RECOVERY")
     assert post(client, "sign-in", recovery).status_code == 200
     assert post(client, "password", {"username": DETAILS["username"], "password": DETAILS["password"]}).status_code == 401

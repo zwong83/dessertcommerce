@@ -85,6 +85,14 @@ def lock_admin(conn):
     )
 
 
+def enroll_merchant(conn, phone):
+    conn.execute("""
+        INSERT INTO account (id, role, phone_e164) VALUES (%s, 'ADMIN', %s)
+        ON CONFLICT (role) WHERE role = 'ADMIN' DO NOTHING
+    """, (uuid4(), phone))
+    return lock_admin(conn)
+
+
 def insert_challenge(conn, challenge_id, role, purpose, epoch, fingerprint, verifier, sealed, now, expiry):
     conn.execute(
         """INSERT INTO otp_challenge
@@ -175,6 +183,28 @@ def insert_merchant_profile(conn, account_id, registration, password_hash):
         INSERT INTO merchant_profile (account_id, display_name, email, username, password_hash)
         VALUES (%s,%s,%s,%s,%s) ON CONFLICT DO NOTHING RETURNING account_id
     """, (account_id, registration.name, registration.email, registration.username, password_hash)) is not None
+
+
+def replace_merchant_setup_link(conn, enrollment, token, expires_at):
+    conn.execute("""
+        INSERT INTO merchant_setup_link (account_id, credential_epoch, token_hash, expires_at)
+        VALUES (%s, %s, %s, %s)
+        ON CONFLICT (account_id) DO UPDATE SET credential_epoch = excluded.credential_epoch,
+            token_hash = excluded.token_hash, expires_at = excluded.expires_at
+    """, (enrollment["id"], enrollment["credential_epoch"], token_hash(token), expires_at))
+
+
+def merchant_setup_link_exists(conn, token, now):
+    return one(conn, "SELECT 1 FROM merchant_setup_link WHERE token_hash = %s AND expires_at > %s",
+               (token_hash(token), now)) is not None
+
+
+def consume_merchant_setup_link(conn, enrollment, token, now):
+    result = conn.execute("""
+        DELETE FROM merchant_setup_link
+        WHERE account_id = %s AND credential_epoch = %s AND token_hash = %s AND expires_at > %s
+    """, (enrollment["id"], enrollment["credential_epoch"], token_hash(token), now))
+    return result.rowcount == 1
 
 
 def find_password_merchant(conn, username):

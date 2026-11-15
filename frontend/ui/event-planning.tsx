@@ -1,5 +1,6 @@
 "use client";
 
+import { Select } from "@/ui/select";
 import { ErrorMessage } from "./error-message";
 
 import Link from "next/link";
@@ -187,10 +188,10 @@ export function RescheduleEditor({ event, commands }: { event: MerchantEvent; co
     <h3>Recorded customer consent</h3>
     <EventTimeField name="agreedAt">Consent recorded at</EventTimeField>
     <p><label>Consent channel<br />
-      <select name="channel" value={channel} required onChange={e => setChannel(e.target.value)}>
+      <Select name="channel" value={channel} required onChange={e => setChannel(e.target.value)}>
         <option value="">Choose the channel</option><option value="PHONE">Phone</option>
         <option value="WHATSAPP">WhatsApp</option><option value="IN_PERSON">In person</option>
-      </select>
+      </Select>
     </label></p>
     <EventField name="reference" maxLength={200} required>Consent reference</EventField>
     <EventTextArea name="reason" max={500}>Reason for the change</EventTextArea>

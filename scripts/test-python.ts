@@ -1,6 +1,6 @@
 import { fileURLToPath } from "node:url";
-import { databaseUrl, startPython, waitForExit } from "./python-runtime";
-import { startTestPostgres } from "../tests/postgres-harness";
+import { startPython, waitForExit } from "./python-runtime";
+import { databaseUrl, startTestPostgres } from "../tests/postgres-harness";
 
 async function main() {
   const cache = fileURLToPath(new URL("../.cache/", import.meta.url));

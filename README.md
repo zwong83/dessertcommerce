@@ -2,53 +2,54 @@
 
 SweetCommerce is Gather Dessert’s standard-order and dessert-table booking application with separate customer and merchant routes. Next.js, React and TypeScript serve both surfaces. FastAPI serves the versioned API, and an independent Python worker handles durable work on PostgreSQL 16. The delivery checklist lives in [OpenSpec](openspec/changes/standard-dessert-ordering/tasks.md).
 
-The Next.js application lives in `frontend/`, including its routes, UI, API contracts and server helpers. The Python API and worker live in `backend/`. Run the npm commands from the repository root; they select `frontend/` as the Next.js project directory.
+The Next.js application lives in `frontend/`, including its routes, UI and API contracts. Its `server/http/` helpers forward requests to Python, read sessions and format web errors. The Python API, business logic, database access and worker live in `backend/`. Local launchers live in `scripts/`. Run the npm commands from the repository root; they select `frontend/` as the Next.js project directory.
 
-## Run the isolated development environment
+## Run with the installed PostgreSQL database
 
-Use Node.js 22.13 or newer and Python 3.12. The launcher starts Next.js, FastAPI, the Python worker and a disposable PostgreSQL 16 instance. It connects the frontend to the API automatically. Set `SWEETCOMMERCE_PYTHON` to use a different Python 3.12 environment with the same dependencies.
+Use Node.js 22.13 or newer, Python 3.12, and PostgreSQL 16. The launcher starts Next.js, FastAPI, and the Python worker against the installed `sweetcommerce_local` database. Set `SWEETCOMMERCE_PYTHON` to use a different Python 3.12 environment with the same dependencies.
 
 ### Windows and IntelliJ IDEA
 
-From the repository root in PowerShell, install dependencies once:
+From the repository root in PowerShell, install the Node.js packages, create the Python environment if needed, and install uv once into it:
 
 ```powershell
 npm ci
 $sweetVenv = Join-Path (Split-Path -Parent (Get-Location).Path) '.venv'
-py -3.12 -m venv $sweetVenv
-& "$sweetVenv\Scripts\python.exe" -m pip install -r backend/requirements-test.txt
-& "$sweetVenv\Scripts\python.exe" -m pip check
+if (-not (Test-Path "$sweetVenv\Scripts\python.exe")) { py -3.12 -m venv $sweetVenv }
+& "$sweetVenv\Scripts\python.exe" -m pip install uv==0.13.8
+npm run python:sync
 ```
 
-Open the repository root in IntelliJ IDEA. With Node.js support enabled and a project Node.js runtime selected, run **SweetCommerce Local** from the run configuration dropdown. For Python editing, enable the Python plugin and select `.venv\Scripts\python.exe` in the parent `DessertCommerce` folder as an existing Python SDK. The launcher prefers that interpreter on Windows. If you previously set `SWEETCOMMERCE_PYTHON` in the run configuration, remove the override or point it to the new interpreter.
+Open the project in IntelliJ IDEA. For Python editing, enable the Python plugin and select `.venv\Scripts\python.exe` in the parent `DessertCommerce` folder as an existing Python SDK. The launcher prefers that interpreter on Windows. If `SWEETCOMMERCE_PYTHON` is set in the run configuration, point it to the same interpreter or remove the override.
 
-If the npm run configuration is unavailable, run these commands in IntelliJ's PowerShell terminal:
+Python dependencies are declared in `pyproject.toml`. The `dev` group holds test dependencies. When you click **Run** for **SweetCommerce Persistent**, uv syncs the selected virtual environment from `uv.lock` before the app starts. The launcher uses an inexact sync so it keeps tools such as uv and pip in that environment. Use `npm run python:sync` when you want to install dependencies without starting the app.
+
+To add a backend dependency, run the following from the repository root with the package name you need. Add `--dev` for a test-only dependency. Commit both `pyproject.toml` and `uv.lock`. You can also click **Run** to do the sync.
 
 ```powershell
-$env:SWEETCOMMERCE_SYNTHETIC_OTP = '123456'
-npm run dev:isolated
+& ..\.venv\Scripts\python.exe -m uv add --no-sync package-name
+npm run python:sync
 ```
-
-### macOS and Linux
-
-```sh
-npm ci
-UV_PYTHON_INSTALL_DIR="$PWD/.cache/python" uv --cache-dir .cache/uv venv --python 3.12 .cache/python-venv
-uv --cache-dir .cache/uv pip install --python .cache/python-venv/bin/python -r backend/requirements-test.txt
-SWEETCOMMERCE_SYNTHETIC_OTP=123456 npm run dev:isolated
-```
-
-Open `http://127.0.0.1:3000`. Use `+60000000002` for a synthetic customer, or open `/merchant/login` and use the enrolled synthetic merchant number `+60000000001`. Verify with the configured test code. The launcher binds to loopback and uses synthetic verification and payment data. The database starts fresh each time; changes made during a session are temporary. Stop the run in IntelliJ or press `Ctrl+C` in the terminal.
-
-Customer features include catalogue, persistent cart, checkout, order tracking, proof upload, and dessert-table applications and quotes. Merchant features include production capacity, order fulfilment, payment and refund reconciliation, event planning and closure, notification follow-up, and MYT/MYR reporting. The local environment uses simulated delivery and verification.
 
 Customer sign-up creates a password account without a verification code by default. Enter a contact number, such as `+60000000003`, and use a password of at least 8 characters with a lowercase letter, an uppercase letter, a digit and a punctuation symbol. Customer login uses username and password. Set `SWEETCOMMERCE_CUSTOMER_PHONE_VERIFICATION=true` on both the frontend and API to restore phone login and require verification during sign-up. See the [customer authentication extension](output/SD/customer-authentication.md).
 
-## Run with a persistent PostgreSQL database on Windows
+Merchant login uses username and password. The login card explains how to obtain a private setup link. Opening that link displays the merchant registration form. Set `SWEETCOMMERCE_MERCHANT_CODE_AUTHENTICATION=true` in the run environment to also offer code login and recovery.
 
 Install PostgreSQL 16 in the default Windows location. From the repository root, run `& ..\.venv\Scripts\python.exe .\scripts\setup-local-postgres.py` and enter the installer password for the PostgreSQL user `postgres`. The script creates `sweetcommerce_local` and its three application roles and saves their connection settings and the local identity key in the Git-ignored `.env.persistent.local`.
 
-Run **SweetCommerce Persistent** in IntelliJ or use `npm run dev:persistent`. The launcher starts the default Windows PostgreSQL installation if needed, applies migrations, and starts FastAPI, the worker, and Next.js. This database starts empty and keeps its records when the app stops. To restore customer verification for this run configuration, set `SWEETCOMMERCE_CUSTOMER_PHONE_VERIFICATION=true` in the local settings file and restart the app.
+Run **SweetCommerce Persistent** in IntelliJ or use `npm run dev:persistent`. The launcher starts the installed Windows PostgreSQL server if needed and applies migrations. Open `http://127.0.0.1:3000`. Accounts, orders, and invoice templates are retained across restarts. The local app uses simulated delivery and verification. To restore customer code verification, set `SWEETCOMMERCE_CUSTOMER_PHONE_VERIFICATION=true` in the local settings file and restart the app.
+
+To set up the merchant without a verification code, start **SweetCommerce Persistent** to apply the migrations. In IntelliJ's Windows PowerShell terminal at the repository root, run `npm.cmd run merchant:setup -- --phone +60123456789` with your own international phone number. Use `npm.cmd` explicitly so Windows PowerShell forwards the `--phone` option correctly. Open the generated link and fill in the Sign up form. The link expires in 30 minutes and can be used once. Keep it private. When credentials are already set up, log in with the existing username and password.
+
+### Open PostgreSQL in IntelliJ's terminal
+
+Run this in IntelliJ's PowerShell terminal and enter the password you set for the `postgres` user during installation.
+
+```powershell
+& "C:\Program Files\PostgreSQL\16\bin\psql.exe" -h 127.0.0.1 -p 5432 -U postgres -d sweetcommerce_local -W
+```
+
+At the `sweetcommerce_local` prompt, use `\conninfo` to check the connection, `\dt sweetcommerce.*` to list the application tables, or `\q` to exit.
 
 ## Backend processes
 
@@ -86,4 +87,4 @@ node_modules/.bin/tsx scripts/test-web-python.ts
 openspec validate --all --strict
 ```
 
-The TypeScript tests retain the pre-migration baseline and frontend coverage. The Python tests exercise both increments, the worker and provider boundaries on an isolated PostgreSQL 16 instance. The web bridge test starts the built Next.js app, FastAPI and the Python worker against data written by the previous runtime.
+The TypeScript tests retain the pre-migration baseline in `tests/legacy-backend/` and cover the frontend. This historical implementation is used exclusively by tests to verify existing data and behavior across the Python migration. The Python tests exercise both increments, the worker and provider boundaries on an isolated PostgreSQL 16 instance. The web bridge test starts the built Next.js app, FastAPI and the Python worker against data written by the previous runtime. The boundary check scans the frontend to prevent imports of test code, launchers, backend code or PostgreSQL drivers.

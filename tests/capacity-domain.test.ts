@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { canFitCapacity, earliestHandoff, isHandoffEligible, mytDate } from "../frontend/server/capacity/domain";
+import { canFitCapacity, earliestHandoff, isHandoffEligible, mytDate } from "./legacy-backend/capacity/domain";
 
 const policy = { openWeekdays: [1, 2, 3, 4, 5, 6, 7], opensAt: "06:00", closesAt: "22:00" };
 const atCutoff = "2026-11-09T18:00:00+08:00";

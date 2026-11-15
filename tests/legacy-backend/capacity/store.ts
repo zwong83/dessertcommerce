@@ -1,5 +1,5 @@
 import type { Queryable } from "../db";
-import type { components } from "../../contracts/standard-v1";
+import type { components } from "../../../frontend/contracts/standard-v1";
 import { validation } from "../http/problem";
 import { dateMillis, type HandoffPolicy } from "./domain";
 

@@ -117,7 +117,8 @@ def create_app(settings: Settings | None = None, *, database=None, clock=None, d
             migrated = connection.execute(
                 """SELECT to_regclass('sweetcommerce.event_application') IS NOT NULL
                     AND to_regprocedure('sweetcommerce.notice_recipient(uuid,uuid)') IS NOT NULL
-                    AND to_regclass('sweetcommerce.event_invoice') IS NOT NULL AS ready"""
+                    AND to_regclass('sweetcommerce.event_invoice') IS NOT NULL
+                    AND to_regclass('sweetcommerce.merchant_setup_link') IS NOT NULL AS ready"""
             ).fetchone()["ready"]
         if not migrated:
             raise unavailable()

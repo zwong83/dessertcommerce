@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from "node:crypto";
-import type { components } from "../../contracts/standard-v1";
+import type { components } from "../../../frontend/contracts/standard-v1";
 import { type Queryable, type TransactionPool, withTransaction } from "../db";
 import { ApiProblem } from "../http/problem";
 

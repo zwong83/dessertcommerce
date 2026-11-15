@@ -1,5 +1,6 @@
 "use client";
 
+import { Select } from "@/ui/select";
 import { useState } from "react";
 import { priceInSen } from "./merchant-catalog-model";
 import { CommandFeedback, CommandForm, Confirm, Field, LocalTimeField, SelectField, useStandardCommands, type StandardCommands } from "./standard-forms";
@@ -45,10 +46,10 @@ function Lifecycle({ order, commands }: { order: AdminOrder; commands: StandardC
         });
       }}>
       <p><label>Available action<br />
-        <select name="action" required value={action ?? ""} onChange={event => setSelected(event.target.value as OrderAction)}>
+        <Select name="action" required value={action ?? ""} onChange={event => setSelected(event.target.value as OrderAction)}>
           <option value="">Choose an action</option>
           {options.map(([value, title]) => <option key={value} value={value}>{title}</option>)}
-        </select>
+        </Select>
       </label></p>
       <div key={action}>
         {needsReason && <Field name="reason" maxLength={500} required>Reason for this action</Field>}

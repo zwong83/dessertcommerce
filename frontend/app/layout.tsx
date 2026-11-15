@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { FormValidationErrors } from "@/ui/form-validation-errors";
+import "@daypicker/react/style.css";
 import "./styles.css";
+import "./controls-and-reports.css";
+import "./product-editor.css";
 
 export const metadata: Metadata = {
   title: "Gather Dessert",

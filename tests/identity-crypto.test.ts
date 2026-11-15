@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { identityCrypto, isEligibleChallenge } from "../frontend/server/identity/crypto";
+import { identityCrypto, isEligibleChallenge } from "./legacy-backend/identity/crypto";
 
 const clock = new Date("2026-11-09T12:00:00Z");
 

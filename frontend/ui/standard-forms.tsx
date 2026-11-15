@@ -1,5 +1,7 @@
 "use client";
 
+import { Select } from "@/ui/select";
+import { DateInput } from "./date-input";
 import { ErrorMessage } from "./error-message";
 
 import Link from "next/link";
@@ -119,12 +121,15 @@ export function CommandFeedback({ commands }: { commands: StandardCommands }) {
   );
 }
 
-export function CommandForm({ commands, legend, submit, children, onSubmit }: {
+export function CommandForm({ commands, legend, submit, children, onSubmit, className, submitHint, onCancel }: {
   commands: StandardCommands;
   legend: string;
   submit: string;
   children: ReactNode;
   onSubmit: (data: FormData, form: HTMLFormElement) => void;
+  className?: string;
+  submitHint?: string;
+  onCancel?: () => void;
 }) {
   function handle(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -137,18 +142,19 @@ export function CommandForm({ commands, legend, submit, children, onSubmit }: {
     }
   }
   return (
-    <form onSubmit={handle}>
+    <form onSubmit={handle} className={className}>
       <fieldset disabled={commands.locked} style={{ minWidth: 0, width: "100%" }}>
         <legend>{legend}</legend>
         {children}
-        <p><button type="submit">{submit}</button></p>
+        <p className="command-form-actions">{submitHint && <span>{submitHint}</span>}{onCancel && <button className="button-secondary" type="button" onClick={onCancel}>Cancel</button>}<button type="submit">{submit}</button></p>
       </fieldset>
     </form>
   );
 }
 
 export function Field({ children, name, ...props }: React.ComponentProps<"input"> & { children: ReactNode; name: string }) {
-  return <p><label>{children}<br /><input {...props} name={name} /></label></p>;
+  return <p><label>{children}<br />{props.type === "date" || props.type === "datetime-local"
+    ? <DateInput {...props} name={name} /> : <input {...props} name={name} />}</label></p>;
 }
 
 export function SelectField({ children, options, name, defaultValue, onChange, required = true }: {
@@ -161,9 +167,9 @@ export function SelectField({ children, options, name, defaultValue, onChange, r
 }) {
   return (
     <p><label>{children}<br />
-      <select style={{ maxWidth: "100%" }} name={name} defaultValue={defaultValue} required={required} onChange={onChange}>
+      <Select style={{ maxWidth: "100%" }} name={name} defaultValue={defaultValue} required={required} onChange={onChange}>
         {options.map(([value, title]) => <option key={value} value={value}>{title}</option>)}
-      </select>
+      </Select>
     </label></p>
   );
 }

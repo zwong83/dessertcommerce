@@ -65,11 +65,13 @@ export function SiteShell({ children, merchant = false, displayName, customerSig
         {!merchant && !customerSignedIn && path === "/" && <Link className="button button-quiet site-sign-in" href="/login">Sign in</Link>}
       </div>
     </header>
-    <div className="shell-body">
-      {workspace && <aside className="workspace-rail">
+    {workspace && <div className="workspace-navigation">
+      <div className="workspace-navigation-inner">
         <p className="eyebrow">Operations</p>
         <Navigation items={merchantNav} path={path} label="Merchant navigation" />
-      </aside>}
+      </div>
+    </div>}
+    <div className="shell-body">
       <div id="page-content" className="page-content" tabIndex={-1}>{children}</div>
     </div>
     <footer className="site-footer"><span>Gather Dessert</span><Link href={merchant ? "/" : "/merchant/login"}>{merchant ? "Customer storefront" : "Merchant sign-in"}</Link></footer>

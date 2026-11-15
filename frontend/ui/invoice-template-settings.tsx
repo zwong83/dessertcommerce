@@ -1,3 +1,4 @@
+import { Select } from "@/ui/select";
 import type { ReactNode } from "react";
 import type { InvoiceSection, InvoiceTemplate } from "./invoice-model";
 
@@ -57,10 +58,10 @@ export function TemplateSectionSettings({ section, template, update, onLogo }: {
     case "items":
       return <>
         <label className="invoice-setting"><span>Table style</span>
-          <select value={template.items.style}
+          <Select value={template.items.style}
             onChange={event => update("items", { style: event.target.value as InvoiceTemplate["items"]["style"] })}>
             <option value="tinted">Tinted header</option><option value="plain">Plain</option><option value="striped">Striped rows</option>
-          </select>
+          </Select>
         </label>
         {([
           ["description", "Description column", 40],

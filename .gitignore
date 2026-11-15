@@ -1,6 +1,7 @@
 node_modules/
 .next/
 .cache/
+.venv/
 __pycache__/
 coverage/
 *.tsbuildinfo

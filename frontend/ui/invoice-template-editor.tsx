@@ -1,5 +1,6 @@
 "use client";
 
+import { Select } from "@/ui/select";
 import { useEffect, useState } from "react";
 import { ErrorMessage } from "./error-message";
 import { Icon } from "./icons";
@@ -165,12 +166,12 @@ export function InvoiceTemplateEditor({ initial, csrfToken }: { initial: Templat
       <section className="invoice-preview" aria-labelledby="invoice-preview-title">
         <header className="invoice-preview-toolbar">
           <h2 id="invoice-preview-title">PDF preview</h2>
-          <select aria-label="Invoice type" value={kind} onChange={event => setKind(event.target.value as InvoiceKind)}>
+          <Select aria-label="Invoice type" value={kind} onChange={event => setKind(event.target.value as InvoiceKind)}>
             <option value="booking">{invoiceKinds.booking}</option><option value="extras">{invoiceKinds.extras}</option>
-          </select>
-          <select aria-label="Preview zoom" value={zoom} onChange={event => setZoom(event.target.value)}>
+          </Select>
+          <Select aria-label="Preview zoom" value={zoom} onChange={event => setZoom(event.target.value)}>
             <option value="fit">Fit page</option><option value="actual">Actual size</option>
-          </select>
+          </Select>
         </header>
         <div className="invoice-preview-canvas" data-zoom={zoom} aria-busy={previewPending}>
           {previewError && <div className="invoice-preview-error" role="alert">

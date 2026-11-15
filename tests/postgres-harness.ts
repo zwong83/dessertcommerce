@@ -7,8 +7,8 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import { Client, Pool, type ClientConfig } from "pg";
-import { migrate } from "../frontend/server/db/migrate";
-import type { OtpDelivery } from "../frontend/server/identity/service";
+import { migrate } from "./legacy-backend/db/migrate";
+import type { OtpDelivery } from "./legacy-backend/identity/service";
 
 const runFile = promisify(execFile);
 const loopback = "127.0.0.1";
@@ -18,6 +18,19 @@ const roleNames = {
   api: "sweetcommerce_api",
   worker: "sweetcommerce_worker",
 } as const;
+
+export function databaseUrl(pool: Pool) {
+  const { user, password, host, port, database } = pool.options;
+  if (host !== loopback || !port || !user || !database || typeof password !== "string") {
+    throw new Error("Expected an isolated loopback PostgreSQL role.");
+  }
+  const url = new URL("postgresql://" + loopback);
+  url.port = String(port);
+  url.username = user;
+  url.password = password;
+  url.pathname = "/" + database;
+  return url.toString();
+}
 
 export function freeLoopbackPort(): Promise<number> {
   return new Promise((resolve, reject) => {

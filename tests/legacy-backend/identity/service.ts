@@ -1,6 +1,6 @@
 import { randomBytes, randomInt, randomUUID } from "node:crypto";
 import type { Pool } from "pg";
-import type { components } from "../../contracts/standard-v1";
+import type { components } from "../../../frontend/contracts/standard-v1";
 import { type Queryable, withTransaction } from "../db";
 import { ApiProblem } from "../http/problem";
 import { equalHash, identityCrypto, isEligibleChallenge, otpPolicy, tokenHash } from "./crypto";

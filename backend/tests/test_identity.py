@@ -11,7 +11,7 @@ from sweetcommerce.identity import IdentityService
 from sweetcommerce.identity.domain import is_eligible_challenge
 from sweetcommerce.identity.infrastructure import IdentityCrypto, token_hash
 
-# These vectors come from frontend/server/identity/crypto.ts with a synthetic key.
+# These vectors come from tests/legacy-backend/identity/crypto.ts with a synthetic key.
 KEY = bytes([9]) * 32
 CHALLENGE_ID = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee"
 PHONE = "+60100001234"

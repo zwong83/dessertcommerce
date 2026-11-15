@@ -1,5 +1,22 @@
 // Generated from the customer authentication extension.
 export interface paths {
+    "/admin/auth/registration/link": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Set up the enrolled merchant using a single-use setup link */
+        post: operations["registerMerchantWithSetupLink"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/auth/registration/challenges": {
         parameters: {
             query?: never;
@@ -254,6 +271,71 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    registerMerchantWithSetupLink: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    setupToken: string;
+                    phone: string;
+                    registration: components["schemas"]["Registration"];
+                };
+            };
+        };
+        responses: {
+            /** @description Merchant credentials saved and session established */
+            201: {
+                headers: {
+                    "Set-Cookie"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Session"];
+                };
+            };
+            /** @description Invalid request or origin */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Setup link is invalid, expired, or does not match enrollment */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Merchant credentials are already configured */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+            /** @description Invalid registration details */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["Problem"];
+                };
+            };
+        };
+    };
     startMerchantRegistration: {
         parameters: {
             query?: never;

@@ -1,5 +1,6 @@
 "use client";
 
+import { Select } from "@/ui/select";
 import { useState } from "react";
 import { Confirm } from "./standard-forms";
 import type { Session } from "./standard-model";
@@ -17,11 +18,11 @@ export function NoticeResolution({ notice, session }: { notice: Notice; session:
       onSubmit={data => commands.json<"resolveNotificationFailure">("admin/notices/" + notice.noticeId + "/resolve", undefined,
         noticeResolution(data, notice), () => "Notice follow-up recorded in the audit history.")}>
       <p>Record what was already verified or completed. Use the provider’s outcome to avoid duplicate contact.</p>
-      <p><label>Resolution<br /><select name="disposition" required value={disposition} onChange={e => setDisposition(e.target.value)}>
+      <p><label>Resolution<br /><Select name="disposition" required value={disposition} onChange={e => setDisposition(e.target.value)}>
         <option value="">Choose a resolution</option>
         <option value="MANUAL_CONTACT">Manual contact completed</option>
         <option value="PROVIDER_RECONCILED">Provider outcome verified</option>
-      </select></label></p>
+      </Select></label></p>
       <EventTextArea name="reason" max={500}>Reason for the audit record</EventTextArea>
       <Confirm>I completed the selected follow-up and confirm this audit record.</Confirm>
     </EventForm>}

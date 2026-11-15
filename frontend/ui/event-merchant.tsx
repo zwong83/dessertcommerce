@@ -1,5 +1,6 @@
 "use client";
 
+import { Select } from "@/ui/select";
 import Link from "next/link";
 import { useState } from "react";
 import { Time } from "./order-details";
@@ -47,10 +48,10 @@ function MerchantCancellation({ event, commands, run }: { event: MerchantEvent }
         run(merchantCancellationPayload(data, basis), "Event cancellation recorded. Review any remaining settlement work.");
       }}>
       <p><label>Cancellation basis<br />
-        <select name="basis" value={basis ?? ""} required onChange={e => setSelected(e.target.value)}>
+        <Select name="basis" value={basis ?? ""} required onChange={e => setSelected(e.target.value)}>
           <option value="">Choose the cancellation basis</option>
           {options.map(([value, title]) => <option key={value} value={value}>{title}</option>)}
-        </select>
+        </Select>
       </label></p>
       <EventTextArea name="reason" max={500}>Reason for cancellation</EventTextArea>
       {basis === "CUSTOMER_REQUEST" && <p><label><input key={event.version} type="checkbox" name="noTransferSent" required /> The customer confirmed they sent no transfer.</label></p>}

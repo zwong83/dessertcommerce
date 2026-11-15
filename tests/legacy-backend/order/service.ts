@@ -2,7 +2,7 @@ import { createHash, randomInt, randomUUID } from "node:crypto";
 import { setTimeout as delay } from "node:timers/promises";
 import { isDeepStrictEqual } from "node:util";
 import type { Pool } from "pg";
-import type { components, operations } from "../../contracts/standard-v1";
+import type { components, operations } from "../../../frontend/contracts/standard-v1";
 import { command, requireRole } from "../capacity/commands";
 import { mytDate } from "../capacity/domain";
 import { allocateCapacity, bumpCapacityImpact, lockCapacityDates } from "../capacity/order";

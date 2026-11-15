@@ -24,6 +24,7 @@ from .domain import CustomerProfile, ProfileEdit, Purpose, Registration, Role, S
 
 _PHONE = re.compile(r"\A\+[1-9][0-9]{7,14}\Z")
 _CODE = re.compile(r"\A[0-9]{6}\Z")
+_MERCHANT_SETUP_TOKEN = re.compile(r"\A[A-Za-z0-9_-]{43}\Z")
 _USERNAME = re.compile(r"\A[a-z0-9][a-z0-9_.-]{2,31}\Z", re.ASCII | re.IGNORECASE)
 _EMAIL = re.compile(r"\A[^@\s]+@[^@\s.]+(?:\.[^@\s.]+)+\Z")
 _CUSTOMER_INTENTS = {"login": Purpose.CUSTOMER_LOGIN, "signup": Purpose.CUSTOMER_SIGNUP}
@@ -211,6 +212,16 @@ def router(service: IdentityService, origin: str, *, customer_phone_verification
         token, session = await run_in_threadpool(
             service.verify, Role.ADMIN, challenge_id, code, purpose=Purpose.MERCHANT_SETUP, registration=registration,
         )
+        return _signed_in(token, session, status_code=201)
+
+    @api.post("/admin/auth/registration/link", status_code=201, operation_id="registerMerchantWithSetupLink")
+    async def register_merchant_with_setup_link(request: Request):
+        require_same_origin(request, origin, 400)
+        body = await read_object(request, ["setupToken", "registration", "phone"], limit=4096)
+        setup_token = field_string(body.get("setupToken"), "the merchant setup link", _MERCHANT_SETUP_TOKEN, 43)
+        phone = field_string(body.get("phone"), "the enrolled international phone number", _PHONE, 16)
+        registration = _registration(body.get("registration"))
+        token, session = await run_in_threadpool(service.register_merchant_with_link, registration, phone, setup_token)
         return _signed_in(token, session, status_code=201)
 
     @api.post("/admin/auth/password", operation_id="signInMerchantWithPassword")

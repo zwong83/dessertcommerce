@@ -69,7 +69,7 @@ def test_python_provider_matches_commercial_and_extension_operation_paths(client
     expected = normalize(COMMERCIAL, API)
     assert len(expected) == 61
     auth = normalize(CUSTOMER_AUTH, API)
-    assert len(auth) == 12 and not expected & auth
+    assert len(auth) == 13 and not expected & auth
     invoices = normalize(INVOICES, API)
     assert len(invoices) == 9 and not invoices & (expected | auth)
     assert normalize(client.app.openapi()) == expected | auth | invoices

@@ -1,4 +1,4 @@
-import type { components, operations } from "../../contracts/standard-v1";
+import type { components, operations } from "../../../frontend/contracts/standard-v1";
 import { dateMillis } from "../capacity/domain";
 import { validation } from "../http/problem";
 import { fieldString, fieldUuid } from "../http/request";

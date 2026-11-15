@@ -10,6 +10,52 @@
     }
   ],
   "paths": {
+    "/admin/auth/registration/link": {
+      "post": {
+        "operationId": "registerMerchantWithSetupLink",
+        "summary": "Set up the enrolled merchant using a single-use setup link",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["setupToken", "phone", "registration"],
+                "properties": {
+                  "setupToken": { "type": "string", "pattern": "^[A-Za-z0-9_-]{43}$" },
+                  "phone": { "type": "string", "pattern": "^\\+[1-9][0-9]{7,14}$" },
+                  "registration": { "$ref": "#/components/schemas/Registration" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Merchant credentials saved and session established",
+            "headers": { "Set-Cookie": { "schema": { "type": "string" } } },
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Session" } } }
+          },
+          "400": {
+            "description": "Invalid request or origin",
+            "content": { "application/problem+json": { "schema": { "$ref": "#/components/schemas/Problem" } } }
+          },
+          "403": {
+            "description": "Setup link is invalid, expired, or does not match enrollment",
+            "content": { "application/problem+json": { "schema": { "$ref": "#/components/schemas/Problem" } } }
+          },
+          "409": {
+            "description": "Merchant credentials are already configured",
+            "content": { "application/problem+json": { "schema": { "$ref": "#/components/schemas/Problem" } } }
+          },
+          "422": {
+            "description": "Invalid registration details",
+            "content": { "application/problem+json": { "schema": { "$ref": "#/components/schemas/Problem" } } }
+          }
+        }
+      }
+    },
     "/admin/auth/registration/challenges": {
       "post": {
         "operationId": "startMerchantRegistration",
