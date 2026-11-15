@@ -1,10 +1,12 @@
 "use client";
 
+import { FileUpload } from "./file-upload";
+
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { prepareMutation, readStandard, StandardProblem } from "./standard-api";
-import { Confirm, Field } from "./standard-forms";
+import { Confirm } from "./standard-forms";
 import { label, money, proofIssue, proofTypes, uuid, type Proof, type Session, type TransferAnswer } from "./standard-model";
 import { Time } from "./order-details";
 import { QuoteDetails } from "./event-details";
@@ -196,7 +198,9 @@ function EventPayment({ event, charge, commands }: { event: EventBooking; charge
               : "Proof was received. The merchant will verify the transfer.";
           });
         }}>
-        <Field name="proof" type="file" required accept={proofTypes.join(",")}>Transfer evidence (JPEG, PNG or PDF, up to 5 MiB)</Field>
+        <FileUpload name="proof" label="Transfer evidence" required accept={proofTypes} maxBytes={5 * 1024 * 1024}
+              help="JPEG, PNG or PDF · Up to 5 MiB" hint="Ready to submit. Choose Upload proof to send it for review."
+              disabled={commands.locked} busy={commands.busy} />
       </EventForm>
     </>}
   </section>;

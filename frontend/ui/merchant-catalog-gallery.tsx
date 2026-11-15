@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { ErrorMessage } from "./error-message";
+import { FileUpload } from "./file-upload";
 import { Icon } from "./icons";
 import { maxPhotos, photoPath, photoTypes } from "./merchant-catalog-model";
 
@@ -26,7 +27,7 @@ export function SavedGallery({ productId, ids }: { productId: string; ids: strin
   );
 }
 
-export function GalleryEditor({ productId, ids, savedIds, onUpload, onMove, onRemove, issue }: {
+export function GalleryEditor({ productId, ids, savedIds, onUpload, onMove, onRemove, issue, busy = false }: {
   productId: string;
   ids: string[];
   savedIds: string[];
@@ -34,8 +35,9 @@ export function GalleryEditor({ productId, ids, savedIds, onUpload, onMove, onRe
   onMove: (from: number, to: number) => void;
   onRemove: (index: number) => void;
   issue?: string;
+  busy?: boolean;
 }) {
-  const input = useRef<HTMLInputElement>(null);
+  const chooseButton = useRef<HTMLButtonElement>(null);
   const [replacement, setReplacement] = useState<number | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const changed = ids.length !== savedIds.length || ids.some((id, index) => id !== savedIds[index]);
@@ -43,17 +45,16 @@ export function GalleryEditor({ productId, ids, savedIds, onUpload, onMove, onRe
   function chooseReplacement(index: number) {
     setFile(null);
     setReplacement(index);
-    if (input.current) {
-      input.current.value = "";
-      input.current.focus();
-    }
   }
 
   useEffect(() => {
     setReplacement(null);
     setFile(null);
-    if (input.current) input.current.value = "";
   }, [ids]);
+
+  useEffect(() => {
+    if (replacement !== null) chooseButton.current?.focus();
+  }, [replacement]);
 
   return (
     <fieldset className="surface product-gallery" id="imageRefs" tabIndex={-1} aria-describedby={issue ? "gallery-help gallery-error" : "gallery-help"}>
@@ -79,8 +80,8 @@ export function GalleryEditor({ productId, ids, savedIds, onUpload, onMove, onRe
                 }}>Later <Icon name="down" size={16} /></button>
                 <button className="button-quiet" type="button" aria-label={`Replace photo ${index + 1}`} onClick={() => chooseReplacement(index)}>Replace</button>
                 <button className="button-quiet" type="button" aria-label={`Remove photo ${index + 1}`} onClick={event => {
-                  if (input.current?.disabled) event.currentTarget.closest("fieldset")?.focus();
-                  else input.current?.focus();
+                  if (chooseButton.current?.disabled) event.currentTarget.closest("fieldset")?.focus();
+                  else chooseButton.current?.focus();
                   onRemove(index);
                 }}>Remove</button>
               </div>
@@ -89,21 +90,21 @@ export function GalleryEditor({ productId, ids, savedIds, onUpload, onMove, onRe
         </ol>
       )}
       {ids.length >= maxPhotos && replacement === null && <p>Gallery is full. Replace or remove a photo to add another.</p>}
-      <div className="product-photo-upload"><div className="product-field">
-        <label htmlFor="catalogue-photo">{replacement === null ? "Choose a photo to add" : `Choose a replacement for photo ${replacement + 1}`}</label>
-        <input id="catalogue-photo" ref={input} type="file" accept={photoTypes.join(",")}
-          disabled={replacement === null && ids.length >= maxPhotos} aria-describedby="gallery-help"
-          onChange={event => setFile(event.target.files?.[0] ?? null)} />
-      </div><div className="product-upload-actions">
-      <button type="button" disabled={!file} onClick={() => file && onUpload(file, replacement)}>
-        {replacement === null ? "Upload photo" : "Upload replacement"}
-      </button>{" "}
-      {replacement !== null && <button className="button-quiet" type="button" onClick={() => {
-        setReplacement(null);
-        setFile(null);
-        if (input.current) input.current.value = "";
-      }}>Cancel replacement</button>}
-      </div></div>
+      <div className="product-photo-upload">
+        <FileUpload key={replacement ?? "add"} id="catalogue-photo" buttonRef={chooseButton}
+          label={replacement === null ? "Add a product photo" : `Replace photo ${replacement + 1}`}
+          accept={photoTypes} maxBytes={5 * 1024 * 1024} help="JPEG, PNG or WebP · Up to 5 MiB · One photo at a time"
+          hint="Ready to upload. Save the product afterwards to apply your gallery."
+          file={file} onFileChange={setFile} busy={busy} disabled={replacement === null && ids.length >= maxPhotos} />
+        <div className="product-upload-actions">
+          <button type="button" disabled={!file || busy} onClick={() => file && onUpload(file, replacement)}>
+            <Icon name="upload" size={16} />{busy ? "Uploading…" : replacement === null ? "Upload photo" : "Upload replacement"}
+          </button>
+          {replacement !== null && <button className="button-quiet" type="button" disabled={busy} onClick={() => {
+            setReplacement(null); setFile(null);
+          }}>Cancel replacement</button>}
+        </div>
+      </div>
       {changed && (
         <details>
           <summary>View currently saved gallery</summary>

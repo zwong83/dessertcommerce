@@ -1,0 +1,35 @@
+.file-upload { width: 100%; min-width: 0; margin-block: .5rem; }
+.file-upload-label { display: flex; flex-wrap: wrap; gap: .5rem; align-items: baseline; margin-bottom: .65rem; font-weight: 650; font-size: .9rem; }
+.file-upload-label > span { color: var(--muted); font-size: .75rem; font-weight: 400; }
+.file-upload-zone { display: flex; flex-direction: column; align-items: center; gap: .65rem; padding: 1.6rem 1rem; border: 1.5px dashed var(--muted); border-radius: 1rem; background: var(--paper); text-align: center; transition: background-color 160ms ease, border-color 160ms ease; min-width: 0; }
+.file-upload-zone[data-dragging] { background: var(--blush); border-color: var(--ink); outline: 2px solid var(--blush); outline-offset: 3px; }
+.file-upload-zone:focus-within { border-color: var(--ink); }
+.file-upload-icon { display: grid; place-items: center; width: 52px; height: 52px; border-radius: 1rem; background: var(--blush); color: var(--ink); }
+.file-upload-title { font-size: 1rem; line-height: 1.4; }
+.file-upload-or { color: var(--muted); font-size: .85rem; }
+.file-upload .file-upload-choose { min-height: 44px; display: inline-flex; align-items: center; justify-content: center; gap: .5rem; margin-top: .25rem; }
+.file-upload .file-upload-help { margin: .15rem 0 0; color: var(--muted); font-size: .8rem; line-height: 1.5; }
+.file-upload .file-upload-hint { margin: .6rem 0 0; color: var(--muted); font-size: .8rem; line-height: 1.5; }
+.file-upload-hint:empty { display: none; }
+.file-upload-selection { display: flex; align-items: center; gap: .8rem; width: 100%; min-width: 0; text-align: left; }
+.file-upload-thumbnail { display: grid; place-items: center; width: 80px; height: 80px; flex: none; overflow: hidden; border: 1px solid var(--line); border-radius: .65rem; background: var(--soft); }
+.file-upload-thumbnail img { width: 100%; height: 100%; object-fit: contain; }
+.file-upload-file { min-width: 0; flex: 1; display: grid; gap: .3rem; }
+.file-upload-file strong { overflow-wrap: anywhere; font-size: .85rem; line-height: 1.4; }
+.file-upload-file > span { color: var(--muted); font-size: .75rem; }
+.file-upload .file-upload-remove { display: grid; place-items: center; width: 44px; height: 44px; min-height: 44px; flex: none; padding: 0; }
+.file-upload-error { margin-top: .6rem; font-size: .85rem; color: var(--ink); }
+.file-upload[data-disabled] .file-upload-zone, fieldset:disabled .file-upload-zone { opacity: .65; }
+.product-photo-upload { border: 0; background: transparent; padding: 0; }
+.product-photo-upload .product-upload-actions { margin-top: 1rem; }
+.account-file .file-upload-choose { justify-self: auto; }
+.invoice-logo-setting .file-upload-zone { padding: 1.25rem .75rem; }
+@media (max-width: 480px) {
+  .file-upload-zone { padding: 1.25rem .75rem; }
+  .file-upload-thumbnail { width: 56px; height: 56px; }
+  .file-upload-selection { gap: .5rem; }
+  .file-upload-choose { width: 100%; }
+  .account-photo-controls { align-items: flex-start; }
+  .account-photo-controls .account-file { flex-basis: 100%; }
+}
+@media (prefers-reduced-motion: reduce) { .file-upload-zone { transition: none; } }

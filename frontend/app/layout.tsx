@@ -5,6 +5,7 @@ import "@daypicker/react/style.css";
 import "./styles.css";
 import "./controls-and-reports.css";
 import "./product-editor.css";
+import "./file-upload.css";
 
 export const metadata: Metadata = {
   title: "Gather Dessert",

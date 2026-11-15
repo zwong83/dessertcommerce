@@ -311,7 +311,7 @@ function EditProduct({ product: initialProduct, session }: { product: Product; s
             <GalleryEditor productId={saved.id} ids={ids} savedIds={saved.imageRefs}
               onUpload={upload} onMove={(from, to) => changeGallery(movePhoto(ids, from, to), `Photo moved to position ${to + 1}.`)}
               onRemove={index => changeGallery(ids.filter((_, position) => index !== position), `Photo ${index + 1} removed from the draft.`)}
-              issue={issues.imageRefs} />
+              issue={issues.imageRefs} busy={command.busy} />
           </fieldset>
           {!archived && <div className="surface product-save-bar"><div><strong>{dirty ? "Ready to save your changes?" : "Your product is up to date"}</strong><p>Save details and photos. Publication status stays the same.</p></div><button type="submit" disabled={conflict}><Icon name="check" size={16} />{command.busy ? "Working…" : "Save product"}</button></div>}
           </div>
