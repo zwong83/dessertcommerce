@@ -123,10 +123,12 @@ export function EventFeedback({ commands }: { commands: EventCommands }) {
   </>;
 }
 
-export function EventForm({ commands, legend, submit, children, onSubmit }: {
+export function EventForm({ commands, legend, submit, children, onSubmit, className, submitHint }: {
   commands: EventCommands;
   legend: string;
   submit: string;
+  className?: string;
+  submitHint?: string;
   children: ReactNode;
   onSubmit: (data: FormData, form: HTMLFormElement) => void;
 }) {
@@ -139,11 +141,14 @@ export function EventForm({ commands, legend, submit, children, onSubmit }: {
       commands.showError(error);
     }
   }
-  return <form onSubmit={handle}>
+  return <form onSubmit={handle} className={className}>
     <fieldset className="surface" disabled={commands.locked} style={{ minWidth: 0, width: "100%" }}>
       <legend>{legend}</legend>
       {children}
-      <p><button type="submit">{commands.busy ? "Working…" : submit}</button></p>
+      {submitHint ? <div className="event-request-submit">
+        <p><button type="submit">{commands.busy ? "Working…" : submit}</button></p>
+        <p>{submitHint}</p>
+      </div> : <p><button type="submit">{commands.busy ? "Working…" : submit}</button></p>}
     </fieldset>
   </form>;
 }

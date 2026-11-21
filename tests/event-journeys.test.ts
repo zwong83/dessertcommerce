@@ -80,6 +80,17 @@ test("intake converts one local date with ordered times and validates the exact 
   assert.throws(() => requestPayload(form({ ...requested, eventDate: "2027-02-30" }), atCutoff), /lead time/);
 });
 
+test("event requests allow omitted preferences while preserving the API's None representation and length limits", () => {
+  const input = requestPayload(form({ ...requested, theme: "  ", specialRequirements: "" }), new Date(now));
+  assert.equal(input.theme, "None");
+  assert.equal(input.specialRequirements, "None");
+  const specified = requestPayload(form({ ...requested, theme: "Floral", specialRequirements: "Nut allergy" }), new Date(now));
+  assert.equal(specified.theme, "Floral");
+  assert.equal(specified.specialRequirements, "Nut allergy");
+  assert.throws(() => requestPayload(form({ ...requested, theme: "x".repeat(121) }), new Date(now)));
+  assert.throws(() => requestPayload(form({ ...requested, specialRequirements: "x".repeat(1001) }), new Date(now)));
+});
+
 test("quote payload checks offered schedule, coverage, positive split inputs and both deadline rules", () => {
   assert.equal(quoteInput.totalMinor, 3);
   assert.deepEqual(quoteInput.equipment, [{ name: "Display stand", quantity: 4 }]);
