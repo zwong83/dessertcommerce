@@ -5,12 +5,15 @@ import { FileUpload } from "./file-upload";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import type { CountryCode } from "libphonenumber-js";
+import { internationalPhone } from "./account-phone";
+import { EventRequestFields, EventRequestGuide } from "./event-request-fields";
 import { prepareMutation, readStandard, StandardProblem } from "./standard-api";
 import { Confirm } from "./standard-forms";
 import { label, money, proofIssue, proofTypes, uuid, type Proof, type Session, type TransferAnswer } from "./standard-model";
 import { Time } from "./order-details";
 import { QuoteDetails } from "./event-details";
-import { EventFeedback, EventField, EventForm, EventTextArea, useEventCommands, useEventDeadline, type EventCommands } from "./event-forms";
+import { EventFeedback, EventForm, useEventCommands, useEventDeadline, type EventCommands } from "./event-forms";
 import { acceptancePayload, balanceCutoff, eventCancellation, eventChargeNames, requestPayload, type EventBooking, type EventCharge } from "./event-model";
 
 async function requestOutcome(key: string) {
@@ -34,6 +37,8 @@ export function EventRequestForm({ session, minimumDate }: { session: Session; m
   const [ready, setReady] = useState(false);
   const [opening, setOpening] = useState(false);
   const pendingCheck = useRef(false);
+  const [country, setCountry] = useState<CountryCode>("MY");
+  const [phone, setPhone] = useState("");
 
   useEffect(() => {
     try {
@@ -87,8 +92,6 @@ export function EventRequestForm({ session, minimumDate }: { session: Session; m
 
   return <>
     <EventFeedback commands={commands} />
-    <p>Choose an event date at least seven days ahead in Malaysia time. After 10 pm MYT, the earliest date moves forward by one day.</p>
-    <p>The merchant will review your request and send a quote if they can serve your event.</p>
     {!ready && <p role="status">Checking for an earlier request…</p>}
     {opening ? <p role="status">Opening your event request…</p> : restored ? <section>
       <h2>Check your previous submission</h2>
@@ -103,8 +106,12 @@ export function EventRequestForm({ session, minimumDate }: { session: Session; m
           setNoOutcome(false);
         }}>Start a new request</button>
       </div>}
-    </section> : ready && <EventForm commands={commands} legend="Dessert table request" submit="Send event request"
+    </section> : ready && <div className="event-request-layout"><EventForm commands={commands} legend="Dessert table request" submit="Send event request" className="event-request-form"
+      submitHint="We’ll review your details before sending a quote. You can follow your request in Your events."
       onSubmit={data => {
+        const normalizedPhone = internationalPhone(phone, country);
+        if (!normalizedPhone) throw new Error("Enter a valid contact phone number for the selected country code.");
+        data.set("phone", normalizedPhone);
         const json = requestPayload(data, new Date());
         const mutation = prepareMutation({ path: "events", json });
         try {
@@ -121,31 +128,9 @@ export function EventRequestForm({ session, minimumDate }: { session: Session; m
           },
         });
       }}>
-      <h2>Event details</h2>
-      <p>Earliest eligible date {minimumDate} (MYT).</p>
-      <div className="field-grid">
-      <EventField name="eventDate" type="date" min={minimumDate} required>Event date (MYT)</EventField>
-      <EventField name="setupReadyAt" type="time" required>Setup ready (MYT)</EventField>
-      <EventField name="startAt" type="time" required>Event starts (MYT)</EventField>
-      <EventField name="expectedEndAt" type="time" required>Expected end (MYT)</EventField>
-      </div>
-      <EventField name="guestCount" type="number" min={1} max={100000} step={1} required>Guest count</EventField>
-      <EventField name="budget" inputMode="decimal" maxLength={10} placeholder="350.00" required>Budget (MYR)</EventField>
-      <EventField name="occasion" maxLength={120} required>Occasion</EventField>
-      <EventField name="theme" maxLength={120} required>Theme (enter “None” if you have no preference)</EventField>
-      <EventTextArea name="specialRequirements" max={1000}>Special requirements (enter “None” if you have none)</EventTextArea>
-      <h2>Venue</h2>
-      <EventField name="line1" maxLength={200} autoComplete="address-line1" required>Street address</EventField>
-      <EventField name="line2" maxLength={200} autoComplete="address-line2">Address line 2 (optional)</EventField>
-      <EventField name="city" maxLength={100} autoComplete="address-level2" required>City</EventField>
-      <EventField name="postcode" maxLength={20} autoComplete="postal-code" required>Postcode</EventField>
-      <EventField name="region" maxLength={100} autoComplete="address-level1" required>State or territory</EventField>
-      <EventField name="note" maxLength={300}>Venue access notes (optional)</EventField>
-      <h2>Contact</h2>
-      <EventField name="contactName" maxLength={120} autoComplete="name" required>Contact name</EventField>
-      <EventField name="phone" type="tel" maxLength={24} autoComplete="tel" required>Contact phone</EventField>
-      <EventField name="notificationEmail" type="email" maxLength={254} autoComplete="email">Notice email (optional)</EventField>
-    </EventForm>}
+      <p className="event-request-required">All fields are required unless marked optional.</p>
+      <EventRequestFields minimumDate={minimumDate} country={country} onCountryChange={setCountry} phone={phone} onPhoneChange={setPhone} />
+    </EventForm><EventRequestGuide /></div>}
   </>;
 }
 
