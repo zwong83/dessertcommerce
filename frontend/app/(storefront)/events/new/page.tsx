@@ -3,6 +3,7 @@ import { requirePageSession } from "@/server/http/page-session";
 import { EventRequestForm } from "@/ui/event-customer";
 import { earliestRequestDate } from "@/ui/event-model";
 import { Icon } from "@/ui/icons";
+import { EventBookingCaution } from "@/ui/customer-event-view";
 import "./event-request.css";
 
 export default async function NewEventPage() {
@@ -14,6 +15,7 @@ export default async function NewEventPage() {
       <h1>Request a dessert table</h1>
       <p>Request a dessert table for your next gathering. Tell us what you have in mind, and we’ll help bring it to the table.</p>
     </header>
+    <EventBookingCaution />
     <EventRequestForm key={accountId} session={{ accountId, role, csrfToken }} minimumDate={earliestRequestDate(new Date())} />
   </main>;
 }

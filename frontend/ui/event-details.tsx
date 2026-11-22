@@ -3,11 +3,11 @@ import { eventStatuses, type EventBooking, type EventSchedule } from "./event-mo
 import { label, money } from "./standard-model";
 
 export function EventScheduleDetails({ schedule }: { schedule: EventSchedule }) {
-  return <ul className="item-list">
-    <li>Setup ready <Time at={schedule.setupReadyAt} /></li>
-    <li>Start <Time at={schedule.eventStartAt} /></li>
-    <li>Expected end <Time at={schedule.eventEndAt} /></li>
-    <li>Teardown <Time at={schedule.teardownAt} /></li>
+  return <ul className="item-list event-schedule-list">
+    <li><span>Setup ready</span> <Time at={schedule.setupReadyAt} /></li>
+    <li><span>Start</span> <Time at={schedule.eventStartAt} /></li>
+    <li><span>Expected end</span> <Time at={schedule.eventEndAt} /></li>
+    <li><span>Teardown</span> <Time at={schedule.teardownAt} /></li>
   </ul>;
 }
 
@@ -51,7 +51,7 @@ export function EventDetails({ event }: { event: EventBooking }) {
 }
 
 export function QuoteDetails({ quote }: { quote: NonNullable<EventBooking["quote"]> }) {
-  return <section>
+  return <section className="surface event-quote">
     <h2>Event quote {quote.version}</h2>
     {quote.invoiceLines && <ul className="item-list" aria-label="Quoted invoice lines">
       {quote.invoiceLines.map((line, index) => <li key={index}>

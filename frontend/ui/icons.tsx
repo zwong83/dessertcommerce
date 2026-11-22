@@ -1,4 +1,5 @@
 const paths = {
+  warning: "M12 3 2 21h20L12 3Zm0 6v5m0 3v.01",
   arrow: "M5 12h14m-6-6 6 6-6 6",
   bag: "M5 8h14l1 13H4L5 8Zm4 2V6a3 3 0 0 1 6 0v4",
   cake: "M3 20h18M5 20v-8a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v8M5 14c2 0 2 2 4 2s2-2 3-2 2 2 4 2 2-2 3-2M9 10V7m6 3V7M9 4v.01M15 4v.01",

@@ -1,0 +1,120 @@
+.customer-events-page { width: min(100%, 74rem); }
+.customer-events-heading { display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; margin-bottom: 2rem; }
+.customer-events-heading > div { min-width: 0; }
+.customer-events-heading h1 { font-size: clamp(2.25rem, 4.2vw, 3.7rem); margin: .8rem 0; overflow-wrap: anywhere; }
+.customer-events-heading p:not(.eyebrow) { color: var(--muted); max-width: 55ch; }
+.customer-events-heading > .button { flex: none; min-height: 48px; }
+.event-booking-caution { display: flex; align-items: start; gap: .9rem; padding: 1.1rem 1.3rem; margin-block: 1.5rem 2rem; border: 1px solid color-mix(in srgb, var(--gold) 65%, var(--ink)); border-left: 5px solid var(--gold); border-radius: .85rem; background: color-mix(in srgb, var(--gold) 16%, var(--paper)); color: var(--ink); }
+.event-booking-caution > svg { margin-top: .1rem; }
+.event-booking-caution > div > strong { display: block; font-size: 1rem; }
+.event-booking-caution p { margin-top: .35rem; font-size: .9rem; max-width: 85ch; }
+.customer-event-list { margin-top: 2rem; }
+.customer-event-list-heading { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: .75rem; margin-bottom: 1rem; }
+.customer-event-list-heading h2 { font-size: 1.65rem; }
+.customer-event-list-heading > span { color: var(--muted); font-size: .82rem; }
+.customer-event-list > ul { display: grid; gap: 1.1rem; list-style: none; margin: 0; padding: 0; }
+.customer-event-card { display: flex; gap: 1.5rem; padding: 1.5rem; border: 1px solid var(--line); border-radius: 1.25rem; background: var(--paper); box-shadow: 0 4px 18px color-mix(in srgb, var(--ink) 3%, transparent); }
+.customer-event-date { flex: none; width: 5.25rem; height: 6rem; border-radius: .9rem; background: var(--blush); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .15rem; }
+.customer-event-date strong { font: 600 2.5rem/1.1 var(--serif); }
+.customer-event-date span { font-size: .72rem; font-weight: 650; }
+.customer-event-card-body { flex: 1; min-width: 0; }
+.customer-event-card-title { display: flex; align-items: start; justify-content: space-between; gap: 1rem; }
+.customer-event-card-title > div { min-width: 0; }
+.event-reference { color: var(--muted); font-size: .82rem; overflow-wrap: anywhere; }
+.customer-event-card h2 { font-size: 1.6rem; margin-top: .3rem; overflow-wrap: anywhere; }
+.customer-event-card h2 a { text-decoration: none; }
+.customer-event-card h2 a:hover { text-decoration: underline; }
+.event-status-badge { display: inline-flex; align-items: center; gap: .45rem; padding: .45rem .75rem; border-radius: 2rem; border: 1px solid var(--line); background: var(--soft); color: var(--ink); font-size: .78rem; line-height: 1.4; font-weight: 700; max-width: 100%; }
+.event-status-badge::before { content: ""; flex: none; width: .4rem; height: .4rem; border-radius: 50%; background: currentColor; }
+.event-status-badge:is([data-status="QUOTED"], [data-status="AWAITING_DEPOSIT"], [data-status="BALANCE_GRACE"], [data-status="ADDITIONAL_BILL"], [data-status="EXCEPTION"]) { background: color-mix(in srgb, var(--gold) 18%, var(--paper)); }
+.event-status-badge:is([data-status="BOOKED"], [data-status="PROCEEDING"], [data-status="COMPLETED"]) { background: var(--blush); }
+.event-status-badge:is([data-status="CANCELLED"], [data-status="DECLINED"], [data-status="EXPIRED"]) { color: var(--muted); }
+.customer-event-facts { display: grid; grid-template-columns: 1.6fr .7fr 1fr; gap: 1.25rem; margin: 1.25rem 0; }
+.customer-event-facts p { display: flex; align-items: start; gap: .6rem; margin: 0; font-size: .78rem; color: var(--muted); min-width: 0; }
+.customer-event-facts svg { margin-top: .15rem; }
+.customer-event-facts strong { display: block; color: var(--ink); font-size: .88rem; font-weight: 600; margin-top: .2rem; overflow-wrap: anywhere; }
+.customer-event-card-footer { display: flex; justify-content: space-between; align-items: center; gap: 1rem; border-top: 1px solid var(--line); padding-top: 1rem; }
+.customer-event-card-footer > p { color: var(--muted); font-size: .88rem; }
+.customer-event-card-footer > a { flex: none; font-size: .85rem; }
+.customer-event-pagination { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 1rem; padding-block: 1rem; }
+.customer-events-empty { display: flex; flex-direction: column; align-items: center; text-align: center; border: 1px solid var(--line); border-radius: 1.25rem; padding: clamp(1.5rem, 5vw, 4rem); background: var(--paper); }
+.customer-events-empty-icon { display: grid; place-items: center; width: 5rem; height: 5rem; background: var(--blush); border-radius: 50%; margin-bottom: 1.5rem; }
+.customer-events-empty h2 { margin: .75rem 0; font-size: clamp(1.7rem, 3vw, 2.4rem); }
+.customer-events-empty > p:not(.eyebrow) { max-width: 49ch; color: var(--muted); }
+.customer-events-empty > a { margin-top: 1.5rem; }
+.customer-event-breadcrumb { display: flex; align-items: center; flex-wrap: wrap; gap: .6rem; color: var(--muted); font-size: .85rem; margin-bottom: 1.5rem; }
+.customer-event-breadcrumb a { display: inline-flex; min-height: 44px; align-items: center; }
+.customer-event-breadcrumb span { overflow-wrap: anywhere; }
+.event-next-step { display: flex; align-items: start; gap: 1rem; padding: 1.25rem 1.5rem; border: 1px solid var(--line); border-radius: 1rem; background: var(--blush); }
+.event-next-step h2 { font: 750 .9rem/1.4 system-ui, sans-serif; letter-spacing: 0; }
+.event-next-step p { margin-top: .35rem; font-size: .95rem; }
+.customer-event-jump-nav { display: flex; flex-wrap: wrap; gap: .3rem; margin: 1.5rem 0; padding: .4rem; border: 1px solid var(--line); border-radius: .85rem; background: var(--paper); }
+.customer-event-jump-nav a { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; flex: 1; padding: .6rem 1rem; white-space: nowrap; border-radius: .6rem; font-size: .87rem; font-weight: 650; text-decoration: none; }
+.customer-event-jump-nav a:hover { background: var(--blush); }
+.event-anchor { scroll-margin-top: 1.5rem; }
+.event-overview { display: grid; gap: 1.25rem; }
+.event-overview-grid { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 1.25rem; align-items: start; }
+.customer-events-page :is(.event-panel, .event-quote, .event-payment-panel, .event-transfer-help, .event-documents > section) { padding: clamp(1.2rem, 2.8vw, 2rem); border: 1px solid var(--line); border-radius: 1.25rem; background: var(--paper); min-width: 0; overflow-wrap: anywhere; }
+.customer-events-page .event-confirmed-panel { border-top: 4px solid var(--accent); }
+.event-panel-heading { display: flex; align-items: center; gap: .8rem; margin-bottom: 1.3rem; }
+.customer-events-page .event-panel h2, .customer-events-page .event-quote h2, .event-payment-heading h2, .event-transfer-help h2, .event-documents h2 { font-size: 1.65rem; }
+.event-section-number { display: grid; place-items: center; flex: none; width: 2.5rem; height: 2.5rem; border-radius: 50%; background: var(--blush); font-size: .8rem; font-weight: 750; }
+.customer-events-page :is(.event-info-grid, .event-info-stack, .event-payment-amounts) { margin: 0; }
+.event-info-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.2rem; }
+.event-info-stack { display: grid; gap: 1.2rem; }
+.customer-events-page dt { color: var(--muted); font-size: .8rem; font-weight: 500; }
+.customer-events-page dd { margin: .3rem 0 0; font-size: .95rem; font-weight: 600; overflow-wrap: anywhere; white-space: pre-wrap; }
+.customer-events-page .event-subheading { margin-top: 1.6rem; margin-bottom: .6rem; font-size: .9rem; }
+.event-preserve-text { white-space: pre-wrap; }
+.event-muted { color: var(--muted); font-size: .9rem; }
+.customer-events-page .event-schedule-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr)); gap: .65rem; padding: 0; margin-block: 1rem 0; }
+.customer-events-page .event-schedule-list li { display: flex; flex-direction: column; gap: .25rem; padding: .85rem 1rem; border: 0; border-radius: .7rem; background: var(--soft); }
+.customer-events-page .event-schedule-list li > span { color: var(--muted); font-size: .77rem; }
+.customer-events-page .event-schedule-list time { font-size: .85rem; font-weight: 600; }
+.customer-event-actions { display: grid; gap: 1.25rem; padding-top: 2.5rem; }
+.event-actions-heading { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; justify-content: space-between; }
+.event-actions-heading h2 { margin-top: .5rem; font-size: 1.9rem; }
+.event-actions-heading button { font-size: .85rem; }
+.customer-events-page .event-quote > h3 { font-size: 1rem; margin-top: 1.8rem; padding-top: 1.25rem; border-top: 1px solid var(--line); }
+.customer-events-page .event-quote > h3 + p { margin-top: .6rem; }
+.customer-events-page .event-quote > p { font-size: .92rem; }
+.customer-events-page .event-quote > ul:not(.event-schedule-list) { padding: 0; }
+.customer-events-page .event-quote > ul:not(.event-schedule-list) > li { padding: .9rem 1rem; background: var(--soft); border: 1px solid var(--line); border-radius: .7rem; font-size: .9rem; }
+.customer-events-page .event-quote > h3 + p > strong { font-size: 1.4rem; }
+.event-payment-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: .8rem; }
+.event-payment-amounts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .75rem; padding-block: 1.25rem; }
+.event-payment-amounts > div { padding: 1rem; background: var(--soft); border-radius: .75rem; }
+.customer-events-page .event-payment-amounts dd { font-size: 1.15rem; }
+.event-payment-panel > p { font-size: .9rem; }
+.event-payment-deadline { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; margin-block: 1rem; padding: .9rem; border-radius: .75rem; background: color-mix(in srgb, var(--gold) 14%, var(--paper)); }
+.customer-events-page .customer-event-actions fieldset { min-width: 0; border: 1px solid var(--line); border-radius: 1rem; padding: 1.25rem; margin: 1rem 0 0; }
+.customer-events-page .customer-event-actions > form > fieldset { margin-top: 0; background: var(--paper); }
+.customer-events-page .customer-event-actions fieldset legend { padding-inline: .4rem; font-size: .9rem; font-weight: 700; }
+.customer-events-page .event-transfer-help label { display: flex; align-items: center; gap: .65rem; min-height: 44px; padding: .6rem .8rem; background: var(--soft); border: 1px solid var(--line); border-radius: .7rem; font-size: .9rem; }
+.customer-events-page .event-transfer-help label:has(input:checked) { background: var(--blush); border-color: var(--chart-rose); }
+.customer-events-page .event-transfer-help input { flex: none; }
+.event-documents { margin-top: 1.25rem; }
+.customer-events-page .event-documents .item-list { padding: 0; }
+.customer-events-page .event-documents li { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; padding: 1rem; border: 1px solid var(--line); border-radius: .75rem; background: var(--soft); }
+@media (max-width: 900px) {
+  .customer-events-heading { align-items: start; flex-direction: column; }
+  .event-overview-grid { grid-template-columns: minmax(0, 1fr); }
+  .customer-event-facts { grid-template-columns: 1fr 1fr; }
+  .customer-event-facts p:first-child { grid-column: 1 / -1; }
+}
+@media (max-width: 600px) {
+  .customer-event-card { gap: .8rem; padding: 1.1rem; flex-wrap: wrap; }
+  .customer-event-date { width: 4.25rem; height: 4.6rem; }
+  .customer-event-date strong { font-size: 2rem; }
+  .customer-event-card-body { flex-basis: 100%; }
+  .customer-event-card-title { flex-direction: column; gap: .65rem; }
+  .customer-event-card-footer { flex-direction: column; align-items: start; }
+  .customer-event-card-footer > a { width: 100%; }
+  .event-payment-amounts { grid-template-columns: minmax(0, 1fr); }
+  .event-payment-amounts > div { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; }
+  .customer-event-jump-nav a { padding-inline: .5rem; font-size: .8rem; }
+  .event-booking-caution { padding: 1rem; gap: .7rem; }
+  .event-booking-caution p { font-size: .85rem; }
+  .event-info-grid { gap: 1rem; }
+  .customer-events-page .event-panel h2 { font-size: 1.5rem; }
+}

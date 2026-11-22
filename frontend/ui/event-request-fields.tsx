@@ -80,7 +80,6 @@ export function EventRequestGuide() {
         <li><strong>We review your request</strong><p>We’ll check availability and send a quote if we can serve your event.</p></li>
         <li><strong>Review your quote</strong><p>Check the details and payment terms before deciding to book.</p></li>
       </ol>
-      <div className="event-request-guide-note"><Icon name="calendar" size={18} /><p>Please allow at least 7 days. After 10 pm MYT, the earliest date moves forward by one day.</p></div>
       <p className="event-request-help">Submitting a request does not confirm a booking. No payment is needed at this step.</p>
     </div>
   </aside>;
