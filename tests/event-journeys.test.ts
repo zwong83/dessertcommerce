@@ -3,6 +3,7 @@ import test from "node:test";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { EventDetails, QuoteDetails } from "../frontend/ui/event-details";
+import { CustomerEventCard, CustomerEventOverview } from "../frontend/ui/customer-event-view";
 import {
   acceptancePayload, balanceCutoff, canReschedule, earliestRequestDate, equipmentCheckPayload, equipmentOutPayload,
   eventCancellation, eventChargePath, eventWorkTarget, extrasPayload, merchantCancellationOptions, merchantCancellationPayload,
@@ -128,6 +129,38 @@ test("rendered event schedules and immutable quote terms keep request, proposal,
   assert.match(offered, /Display stand/);
   assert.match(offered, /Synthetic terms/);
   assert.match(offered, /Quoted balance grace ends/);
+});
+
+test("customer event views distinguish requested, suggested and confirmed schedules", () => {
+  const requestedCard = renderToStaticMarkup(createElement(CustomerEventCard, { event }));
+  assert.match(requestedCard, /Requested start/);
+  assert.doesNotMatch(requestedCard, /Confirmed start/);
+  assert.match(requestedCard, new RegExp("/events/" + eventId));
+  const overview = renderToStaticMarkup(createElement(CustomerEventOverview, {
+    event: { ...event, alternativeSchedule: quoteInput.schedule, effectiveSchedule: quoteInput.schedule },
+  }));
+  assert.match(overview, /Original request/);
+  assert.match(overview, /Suggested alternate schedule/);
+  assert.match(overview, /Confirmed schedule/);
+  assert.match(overview, /Requested start/);
+  assert.match(overview, /MYT/);
+  assert.match(overview, /Estimated budget/);
+  assert.match(overview, /No preference/);
+  assert.doesNotMatch(renderToStaticMarkup(createElement(CustomerEventOverview, { event })), /Confirmed schedule/);
+});
+
+test("cancelled customer events label past confirmations and escape customer-supplied content", () => {
+  const cancelled = { ...event, status: "CANCELLED" as const, effectiveSchedule: quoteInput.schedule,
+    request: { ...event.request, occasion: "<script>alert(1)</script>", venue: { ...event.request.venue, note: "Use side entrance" }, notificationEmail: "guest@example.com" },
+  };
+  const card = renderToStaticMarkup(createElement(CustomerEventCard, { event: cancelled }));
+  assert.match(card, /Previously confirmed start/);
+  assert.doesNotMatch(card, /<script>/);
+  const overview = renderToStaticMarkup(createElement(CustomerEventOverview, { event: cancelled }));
+  assert.match(overview, /Previously confirmed schedule/);
+  assert.match(overview, /Use side entrance/);
+  assert.match(overview, /guest@example.com/);
+  assert.doesNotMatch(overview, /<script>/);
 });
 
 test("consented reschedule keeps paid balance settled and derives 24 hours of grace for outstanding balance", () => {

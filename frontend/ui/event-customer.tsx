@@ -1,6 +1,7 @@
 "use client";
 
 import { FileUpload } from "./file-upload";
+import { Icon } from "./icons";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -155,14 +156,18 @@ function EventPayment({ event, charge, commands }: { event: EventBooking; charge
   const canUpload = charge.allowedActions.includes("UPLOAD_PROOF");
   const qr = canUpload && !reconciliation && !reviewing ? safeQr(charge.qrUrl) : null;
 
-  return <section>
-    <h2>{eventChargeNames[charge.category] ?? "Event payment"}</h2>
-    <p>{label(charge.state)} · Expected {money(charge.expectedMinor)} · Verified {money(charge.paidMinor)} · Refunded {money(charge.refundedMinor)}</p>
+  return <section className="event-payment-panel">
+    <div className="event-payment-heading"><h2>{eventChargeNames[charge.category] ?? "Event payment"}</h2><span className="event-status-badge">{label(charge.state)}</span></div>
+    <dl className="event-payment-amounts">
+      <div><dt>Expected</dt><dd>{money(charge.expectedMinor)}</dd></div>
+      <div><dt>Verified</dt><dd>{money(charge.paidMinor)}</dd></div>
+      <div><dt>Refunded</dt><dd>{money(charge.refundedMinor)}</dd></div>
+    </dl>
     {canUpload && !reconciliation && charge.paidMinor > 0 && charge.outstandingMinor > 0 &&
       <p><strong>Remaining amount {money(charge.outstandingMinor)}</strong></p>}
     {charge.requiredRefundMinor > 0 && <p>Refund still owed {money(charge.requiredRefundMinor)}</p>}
     {balance && event.effectiveBalanceDueAt && <p>Current balance due <Time at={event.effectiveBalanceDueAt} /></p>}
-    {deadline && (!balance || !!balanceCutoff(event)) && <p>{balance && event.effectiveBalanceGraceEndsAt ? "Current grace ends" : "Proof cutoff"} <Time at={deadline} /></p>}
+    {deadline && (!balance || !!balanceCutoff(event)) && <p className="event-payment-deadline"><Icon name="calendar" size={17} />{balance && event.effectiveBalanceGraceEndsAt ? "Current grace ends" : "Proof cutoff"} <Time at={deadline} /></p>}
     {reviewing && <p role="status">Your proof is under review. The merchant still needs to verify the transfer.</p>}
     {qr && <>
       <p>Transfer {money(charge.outstandingMinor)} by DuitNow and upload the proof before the cutoff.</p>
@@ -200,10 +205,11 @@ export function CustomerEvent({ event, session, whatsApp }: { event: EventBookin
   const canCancel = event.allowedActions.includes("CANCEL");
   const noTransfer = eventCancellation(answer);
 
-  return <>
+  return <div className="customer-event-actions">
     <EventFeedback commands={commands} />
-    <p><button type="button" disabled={commands.busy} onClick={commands.refresh}>Refresh event status</button></p>
+    <div className="event-actions-heading"><div><p className="eyebrow">THE NEXT STEPS</p><h2>Quote & payments</h2></div><button type="button" className="button-quiet" disabled={commands.busy} onClick={commands.refresh}>{commands.busy ? "Refreshing…" : "Refresh event status"}</button></div>
     {quote && <QuoteDetails quote={quote} />}
+    {!quote && <section className="event-panel"><h3>No quote issued yet</h3><p className="event-muted">When a quote is issued, you can review the offered schedule, price, and terms here.</p></section>}
     {canAccept && <EventForm key={event.version + ":" + canAccept.quoteId + ":" + canAccept.termsVersion} commands={commands}
       legend="Accept the current quote" submit="Accept quote"
       onSubmit={() => {
@@ -219,7 +225,7 @@ export function CustomerEvent({ event, session, whatsApp }: { event: EventBookin
     </EventForm>}
     {event.status === "QUOTED" && elapsed && <p role="status">The quote cutoff has passed. Refresh the event for the latest outcome.</p>}
     {event.charges.map(charge => <EventPayment key={charge.id} event={event} charge={charge} commands={commands} />)}
-    {(canCancel || event.charges.length > 0) && <section>
+    {(canCancel || event.charges.length > 0) && <section className="event-transfer-help">
       <h2>{canCancel ? "Cancellation and transfer help" : "Transfer help"}</h2>
       {canCancel && <fieldset disabled={commands.locked}>
         <legend>Have you sent a transfer for this event?</legend>
@@ -239,5 +245,5 @@ export function CustomerEvent({ event, session, whatsApp }: { event: EventBookin
         {whatsApp && <a href={whatsApp} target="_blank" rel="noopener noreferrer">Contact the merchant on WhatsApp (opens in a new tab)</a>}
       </div>}
     </section>}
-  </>;
+  </div>;
 }
