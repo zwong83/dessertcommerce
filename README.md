@@ -51,6 +51,18 @@ Run this in IntelliJ's PowerShell terminal and enter the password you set for th
 
 At the `sweetcommerce_local` prompt, use `\conninfo` to check the connection, `\dt sweetcommerce.*` to list the application tables, or `\q` to exit.
 
+## iPhone Home Screen web app
+
+The frontend includes a standalone web manifest, Gather Dessert PNG icons and an Apple touch icon. On iPhone, open the HTTPS website in Safari, choose **Share → Add to Home Screen**, enable **Open as Web App** if available, then **Add**. Installation does not require an App Store release.
+
+The service worker registers only in production on secure contexts. It caches only `/offline.html`; account pages, orders, invoices, API responses and payment requests are never cached by it. Offline navigation shows a reconnect message. It does not queue or replay purchases/uploads. After a lost connection during submission, inspect the order status before retrying. Offline support starts after the first successful online visit and worker installation.
+
+For a production-like local check, build an isolated copy with `npm run build`, then run `npm run start`. `npm run dev:persistent` remains a development launcher and does not register the worker. An iPhone cannot reach the PC through `localhost`: an HTTPS deployment or a separately configured secure test address is needed. Configure the backend's allowed origin to match that address; do not disable origin checks or expose PostgreSQL. No public tunnel or deployment is created by this change.
+
+Regenerate committed icons from the existing logo with `node scripts/generate-pwa-icons.mjs`. When changing offline content, increment the version in `frontend/public/sw.js`. Worker updates delete only this app's older public-fallback caches. To roll back offline support, ship a replacement worker that clears those caches and unregisters itself; simply removing the registration component does not remove existing installed workers.
+
+Before release, check Add to Home Screen, standalone navigation, sign-in, image upload, PDF download, reconnect behaviour and updates on a physical iPhone. Desktop and simulated worker checks do not establish iOS compatibility.
+
 ## Backend processes
 
 Run the following modules from `backend/` with the project Python environment. Supply settings through the process environment.
