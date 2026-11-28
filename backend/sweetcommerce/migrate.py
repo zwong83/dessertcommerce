@@ -17,6 +17,7 @@ MIGRATIONS = (
     (7, "0007-merchant-credentials.sql"),
     (8, "0008-event-invoices.sql"),
     (9, "0009-merchant-setup-links.sql"),
+    (10, "0010-reporting-money-index.sql"),
 )
 
 

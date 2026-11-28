@@ -5,12 +5,13 @@ from uuid import uuid4
 
 import psycopg
 from fastapi import FastAPI, Request
+from fastapi.exceptions import RequestValidationError
 from psycopg_pool import PoolTimeout
 from starlette.exceptions import HTTPException
 from starlette.responses import JSONResponse
 
 from .db import Database
-from .problems import Problem, ResourceNotFound, unavailable
+from .problems import Problem, ResourceNotFound, ValidationProblem, unavailable
 from .runtime import Settings
 
 logger = logging.getLogger(__name__)
@@ -96,6 +97,11 @@ def create_app(settings: Settings | None = None, *, database=None, clock=None, d
     @app.exception_handler(Problem)
     async def application_problem(request, error):
         return _problem_response(request, error)
+
+    @app.exception_handler(RequestValidationError)
+    async def invalid_request(request, error):
+        # Framework errors may contain raw input. Expose only the shared safe error.
+        return _problem_response(request, ValidationProblem())
 
     @app.exception_handler(HTTPException)
     async def unmatched_route(request, error):

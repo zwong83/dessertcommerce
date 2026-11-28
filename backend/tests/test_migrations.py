@@ -39,6 +39,24 @@ def test_runtime_roles_keep_their_existing_grants(dsns, applied):
             worker.execute("SELECT * FROM event_eligible_receipt LIMIT 1")
 
 
+def test_reporting_money_index_is_valid_and_covers_date_range(dsns, applied):
+    with psycopg.connect(dsns["api"]) as connection:
+        definition, valid, ready = connection.execute("""
+            SELECT pg_get_indexdef(indexrelid), indisvalid, indisready FROM pg_index
+            WHERE indexrelid = 'sweetcommerce.money_report_date'::regclass
+        """).fetchone()
+        assert valid and ready
+        assert "(occurred_at, id) INCLUDE (charge_id, kind, amount_minor)" in definition
+        # An empty fixture normally favours a sequential scan. Check index eligibility,
+        # not an artificial performance promise or a fixed production query plan.
+        connection.execute("SET LOCAL enable_seqscan = off")
+        plan = connection.execute("""
+            EXPLAIN (FORMAT JSON) SELECT charge_id, kind, amount_minor FROM money_entry
+            WHERE occurred_at >= '2030-01-01T00:00:00Z' AND occurred_at < '2030-02-01T00:00:00Z'
+        """).fetchone()[0]
+        assert "money_report_date" in str(plan)
+
+
 def test_0002_preserves_existing_standard_charge_and_top_up(dsns):
     migrations = Path(__file__).resolve().parents[2] / "db" / "migrations"
     with psycopg.connect(dsns["migration"]) as conn:

@@ -36,15 +36,62 @@ def _paths(document):
                 yield method, path, operation
 
 
-def _assert_json_contract(response, operation_id):
-    operation = next(op for _, _, op in _paths(CONTRACT) if op["operationId"] == operation_id)
+def _assert_json_contract(response, operation_id, document=CONTRACT):
+    operation = next(op for _, _, op in _paths(document) if op["operationId"] == operation_id)
     data = operation["responses"][str(response.status_code)]
     if "$ref" in data:
-        data = CONTRACT["components"]["responses"][data["$ref"].rsplit("/", 1)[-1]]
+        data = document["components"]["responses"][data["$ref"].rsplit("/", 1)[-1]]
     content_type = response.headers["content-type"].split(";", 1)[0]
     schema = data["content"][content_type]["schema"]
-    validator = Draft202012Validator({"components": CONTRACT["components"], **schema}, format_checker=FormatChecker())
+    validator = Draft202012Validator({"components": document["components"], **schema}, format_checker=FormatChecker())
     validator.validate(response.json())
+
+
+@pytest.mark.parametrize(("method", "path", "operation"), [
+    ("POST", "/admin/invoice-template/preview", "previewInvoiceTemplate"),
+    ("POST", "/admin/events/00000000-0000-0000-0000-000000000000/invoices", "issueExistingEventInvoice"),
+    ("GET", "/events/00000000-0000-0000-0000-000000000000/invoices", "downloadOwnEventInvoice"),
+    ("GET", "/admin/events/00000000-0000-0000-0000-000000000000/invoices", "downloadMerchantEventInvoice"),
+])
+def test_framework_validation_uses_safe_invoice_problem_contract(client, method, path, operation):
+    private_input = "private-value-must-not-be-echoed"
+    suffix = "/pdf" if method == "GET" else ""
+    response = client.request(method, API + path + "/" + private_input + suffix)
+    assert response.status_code == 422
+    assert response.headers["content-type"] == "application/problem+json"
+    assert response.headers["cache-control"] == "no-store"
+    assert response.headers["x-content-type-options"] == "nosniff"
+    assert response.json() == {
+        "code": "VALIDATION", "message": "Check the submitted information.",
+        "requestId": response.headers["x-request-id"], "retryable": False,
+    }
+    assert private_input not in response.text
+    _assert_json_contract(response, operation, INVOICES)
+
+
+def test_invoice_error_responses_match_documented_contract(client, sign_in):
+    path = API + "/admin/invoice-template"
+    anonymous = client.get(path)
+    assert anonymous.status_code == 401
+    _assert_json_contract(anonymous, "getInvoiceTemplate", INVOICES)
+    _, customer = sign_in()
+    forbidden = client.get(path, headers=customer)
+    assert forbidden.status_code == 403
+    _assert_json_contract(forbidden, "getInvoiceTemplate", INVOICES)
+    _, merchant = sign_in("ADMIN")
+    initial = client.get(path, headers=merchant).json()
+    body = {"template": initial["draft"]}
+    stale_version = '"' + str(initial["version"] + 1) + '"'
+    conflict = client.put(path + "/draft", headers=merchant | {"If-Match": stale_version}, json=body)
+    assert conflict.status_code == 409
+    _assert_json_contract(conflict, "saveInvoiceTemplateDraft", INVOICES)
+    invalid = client.post(path + "/preview/booking", headers=merchant, json={"template": {}})
+    assert invalid.status_code == 422
+    _assert_json_contract(invalid, "previewInvoiceTemplate", INVOICES)
+    missing = client.get(API + "/events/00000000-0000-0000-0000-000000000000/invoices/booking/pdf",
+                         headers=customer)
+    assert missing.status_code == 404
+    _assert_json_contract(missing, "downloadOwnEventInvoice", INVOICES)
 
 
 def test_python_provider_exposes_all_standard_operations(client):

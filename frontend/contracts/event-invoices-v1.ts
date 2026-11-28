@@ -163,6 +163,18 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        Problem: {
+            /** @enum {string} */
+            code: "UNAUTHENTICATED" | "FORBIDDEN" | "NOT_FOUND" | "VALIDATION" | "OTP_INVALID" | "OTP_EXPIRED" | "RATE_LIMITED" | "CAPACITY_UNAVAILABLE" | "VERSION_CONFLICT" | "INVALID_TRANSITION" | "IDEMPOTENCY_CONFLICT" | "DEADLINE_PASSED" | "UNSUPPORTED_MEDIA" | "PAYLOAD_TOO_LARGE" | "DEPENDENCY_UNAVAILABLE" | "INTERNAL" | "REVIEW_STALE" | "TERMS_CHANGED" | "FEE_CHANGED" | "QUOTE_EXPIRED" | "PROOF_NOT_REVIEWABLE" | "REFUND_LIMIT_EXCEEDED" | "ORIGIN_DENIED" | "DEPOSIT_DISPOSITION_REQUIRED";
+            /** @example Review the current total and handoff before submitting. */
+            message: string;
+            requestId: string;
+            fieldErrors?: {
+                field: string;
+                code: string;
+            }[];
+            retryable: boolean;
+        };
         /** @enum {string} */
         InvoiceSection: "header" | "billing" | "items" | "payment" | "footer";
         /** @enum {string} */
@@ -218,6 +230,87 @@ export interface components {
         };
     };
     responses: {
+        /** @description Request failed (400) */
+        Problem400: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/problem+json": components["schemas"]["Problem"];
+            };
+        };
+        /** @description Request failed (401) */
+        Problem401: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/problem+json": components["schemas"]["Problem"];
+            };
+        };
+        /** @description Request failed (403) */
+        Problem403: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/problem+json": components["schemas"]["Problem"];
+            };
+        };
+        /** @description Request failed (404) */
+        Problem404: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/problem+json": components["schemas"]["Problem"];
+            };
+        };
+        /** @description Request failed (409) */
+        Problem409: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/problem+json": components["schemas"]["Problem"];
+            };
+        };
+        /** @description Request failed (413) */
+        Problem413: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/problem+json": components["schemas"]["Problem"];
+            };
+        };
+        /** @description Request failed (415) */
+        Problem415: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/problem+json": components["schemas"]["Problem"];
+            };
+        };
+        /** @description Request failed (422) */
+        Problem422: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/problem+json": components["schemas"]["Problem"];
+            };
+        };
+        /** @description Other failures use the shared problem envelope, including temporary dependency failures and unexpected errors. */
+        Problem: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/problem+json": components["schemas"]["Problem"];
+            };
+        };
         /** @description Merchant template state */
         Template: {
             headers: {
@@ -278,6 +371,9 @@ export interface operations {
         requestBody?: never;
         responses: {
             200: components["responses"]["Template"];
+            401: components["responses"]["Problem401"];
+            403: components["responses"]["Problem403"];
+            default: components["responses"]["Problem"];
         };
     };
     saveInvoiceTemplateDraft: {
@@ -293,6 +389,14 @@ export interface operations {
         requestBody: components["requestBodies"]["Template"];
         responses: {
             200: components["responses"]["Template"];
+            400: components["responses"]["Problem400"];
+            401: components["responses"]["Problem401"];
+            403: components["responses"]["Problem403"];
+            409: components["responses"]["Problem409"];
+            413: components["responses"]["Problem413"];
+            415: components["responses"]["Problem415"];
+            422: components["responses"]["Problem422"];
+            default: components["responses"]["Problem"];
         };
     };
     publishInvoiceTemplate: {
@@ -308,6 +412,14 @@ export interface operations {
         requestBody: components["requestBodies"]["Template"];
         responses: {
             200: components["responses"]["Template"];
+            400: components["responses"]["Problem400"];
+            401: components["responses"]["Problem401"];
+            403: components["responses"]["Problem403"];
+            409: components["responses"]["Problem409"];
+            413: components["responses"]["Problem413"];
+            415: components["responses"]["Problem415"];
+            422: components["responses"]["Problem422"];
+            default: components["responses"]["Problem"];
         };
     };
     previewInvoiceTemplate: {
@@ -334,6 +446,13 @@ export interface operations {
                     };
                 };
             };
+            400: components["responses"]["Problem400"];
+            401: components["responses"]["Problem401"];
+            403: components["responses"]["Problem403"];
+            413: components["responses"]["Problem413"];
+            415: components["responses"]["Problem415"];
+            422: components["responses"]["Problem422"];
+            default: components["responses"]["Problem"];
         };
     };
     listOwnEventInvoices: {
@@ -348,6 +467,11 @@ export interface operations {
         requestBody?: never;
         responses: {
             200: components["responses"]["InvoiceList"];
+            401: components["responses"]["Problem401"];
+            403: components["responses"]["Problem403"];
+            404: components["responses"]["Problem404"];
+            422: components["responses"]["Problem422"];
+            default: components["responses"]["Problem"];
         };
     };
     listMerchantEventInvoices: {
@@ -362,6 +486,11 @@ export interface operations {
         requestBody?: never;
         responses: {
             200: components["responses"]["InvoiceList"];
+            401: components["responses"]["Problem401"];
+            403: components["responses"]["Problem403"];
+            404: components["responses"]["Problem404"];
+            422: components["responses"]["Problem422"];
+            default: components["responses"]["Problem"];
         };
     };
     issueExistingEventInvoice: {
@@ -387,6 +516,12 @@ export interface operations {
                     "application/json": components["schemas"]["InvoiceReference"];
                 };
             };
+            401: components["responses"]["Problem401"];
+            403: components["responses"]["Problem403"];
+            404: components["responses"]["Problem404"];
+            409: components["responses"]["Problem409"];
+            422: components["responses"]["Problem422"];
+            default: components["responses"]["Problem"];
         };
     };
     downloadOwnEventInvoice: {
@@ -402,6 +537,11 @@ export interface operations {
         requestBody?: never;
         responses: {
             200: components["responses"]["InvoicePdf"];
+            401: components["responses"]["Problem401"];
+            403: components["responses"]["Problem403"];
+            404: components["responses"]["Problem404"];
+            422: components["responses"]["Problem422"];
+            default: components["responses"]["Problem"];
         };
     };
     downloadMerchantEventInvoice: {
@@ -417,6 +557,11 @@ export interface operations {
         requestBody?: never;
         responses: {
             200: components["responses"]["InvoicePdf"];
+            401: components["responses"]["Problem401"];
+            403: components["responses"]["Problem403"];
+            404: components["responses"]["Problem404"];
+            422: components["responses"]["Problem422"];
+            default: components["responses"]["Problem"];
         };
     };
 }
