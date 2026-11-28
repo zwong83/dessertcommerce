@@ -43,6 +43,20 @@ test("search finds a product beyond the first API page and deduplicates overlapp
   assert.match(String(fetch.mock.calls[1].arguments[0]), /cursor=next%2Bpage/);
 });
 
+test("natural name order preserves case/accent ties and zero-price products in every direction", () => {
+  const two = product("a", "Tart 2", null, 0);
+  const sameName = product("b", "tárt 2", null, 0);
+  const ten = product("c", "Tart 10", null, 100);
+  const quotation = product("d", "Tart 1", null);
+  const source = [ten, sameName, quotation, two];
+  const sorted = (sort: typeof defaultCatalogueFilters.sort) => filterCatalogue(source, { ...defaultCatalogueFilters, sort });
+  assert.deepEqual(sorted("name"), [quotation, two, sameName, ten]);
+  assert.deepEqual(sorted("name-desc"), [ten, two, sameName, quotation]);
+  assert.deepEqual(sorted("price-low"), [two, sameName, ten, quotation]);
+  assert.deepEqual(sorted("price-high"), [ten, two, sameName, quotation]);
+  assert.deepEqual(source, [ten, sameName, quotation, two]);
+});
+
 test("an incomplete, repeating or cancelled catalogue load cannot silently return partial search results", async t => {
   let calls = 0;
   const fetch = t.mock.method(globalThis, "fetch", async () => {

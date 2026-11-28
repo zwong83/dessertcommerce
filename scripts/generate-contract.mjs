@@ -1,5 +1,8 @@
-import { readFile, writeFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import openapiTS, { astToString } from "openapi-typescript";
+import { writeOrCheckContract } from "./contract-output.mjs";
+
+const check = process.argv.includes("--check");
 
 const source = new URL("../output/SD/contracts/sweetcommerce-v1.0.4.openapi.json", import.meta.url);
 const design = new URL("../openspec/changes/standard-dessert-ordering/design.md", import.meta.url);
@@ -29,13 +32,7 @@ if (document.info.version !== "0.4.0" || selected.size !== 49) {
 const result = "// Generated from the approved OpenAPI 0.4.0 increment 1 contract.\n"
   + astToString(await openapiTS(document));
 
-if (process.argv.includes("--check")) {
-  if (await readFile(destination, "utf8") !== result) {
-    throw new Error("Regenerate the checked contract types with npm run contract:generate.");
-  }
-} else {
-  await writeFile(destination, result);
-}
+await writeOrCheckContract(destination, result, check);
 
 const commercialSource = new URL("../output/SD/contracts/sweetcommerce-v1.0.4.1.openapi.json", import.meta.url);
 const commercialDestination = new URL("../frontend/contracts/commercial-v1.ts", import.meta.url);
@@ -49,33 +46,15 @@ if (commercial.info.version !== "0.4.1" || commercialOperations.length !== 61) {
 const commercialTypes = "// Generated from the OpenAPI 0.4.1 commercial contract.\n"
   + astToString(await openapiTS(commercial));
 
-if (process.argv.includes("--check")) {
-  if (await readFile(commercialDestination, "utf8") !== commercialTypes) {
-    throw new Error("Regenerate the checked contract types with npm run contract:generate.");
-  }
-} else {
-  await writeFile(commercialDestination, commercialTypes);
-}
+await writeOrCheckContract(commercialDestination, commercialTypes, check);
 
 const customerAuth = JSON.parse(await readFile(new URL("../output/SD/contracts/customer-auth-v1.openapi.json", import.meta.url), "utf8"));
 const customerAuthDestination = new URL("../frontend/contracts/customer-auth-v1.ts", import.meta.url);
 const customerAuthTypes = "// Generated from the customer authentication extension.\n" + astToString(await openapiTS(customerAuth));
-if (process.argv.includes("--check")) {
-  if (await readFile(customerAuthDestination, "utf8") !== customerAuthTypes) {
-    throw new Error("Regenerate the checked contract types with npm run contract:generate.");
-  }
-} else {
-  await writeFile(customerAuthDestination, customerAuthTypes);
-}
+await writeOrCheckContract(customerAuthDestination, customerAuthTypes, check);
 
 const invoicesSource = new URL("../output/SD/contracts/event-invoices-v1.openapi.json", import.meta.url);
 const invoicesDestination = new URL("../frontend/contracts/event-invoices-v1.ts", import.meta.url);
 const invoiceTypes = "// Generated from the event invoice extension.\n"
   + astToString(await openapiTS(JSON.parse(await readFile(invoicesSource, "utf8"))));
-if (process.argv.includes("--check")) {
-  if (await readFile(invoicesDestination, "utf8") !== invoiceTypes) {
-    throw new Error("Regenerate the checked contract types with npm run contract:generate.");
-  }
-} else {
-  await writeFile(invoicesDestination, invoiceTypes);
-}
+await writeOrCheckContract(invoicesDestination, invoiceTypes, check);
